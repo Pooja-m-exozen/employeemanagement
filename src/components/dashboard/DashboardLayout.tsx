@@ -1,7 +1,7 @@
 import React, { ReactNode, useState, useEffect } from 'react';
 import type { JSX } from 'react';
 import Image from 'next/image';
-import { FaUserFriends, FaBuilding, FaFileAlt, FaTachometerAlt, FaSignOutAlt, FaChevronRight, FaPlus, FaChevronLeft, FaMinus, FaUser, FaCalendarAlt, FaMoneyBillWave, FaTasks, FaReceipt, FaHeadset, FaFileContract, FaDoorOpen, FaBell, FaSearch, FaIdCard, FaEnvelope, FaTimes, FaBars } from 'react-icons/fa';
+import { FaUserFriends, FaBuilding, FaFileAlt, FaTachometerAlt, FaSignOutAlt, FaChevronRight, FaPlus, FaChevronLeft, FaMinus, FaUser, FaCalendarAlt, FaMoneyBillWave, FaTasks, FaReceipt, FaHeadset, FaFileContract, FaDoorOpen, FaBell, FaSearch, FaIdCard, FaEnvelope, FaTimes, FaBars, FaEdit } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { logout, isAuthenticated, getUserRole } from '@/services/auth';
@@ -105,8 +105,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       },
       {
         icon: <FaUser />,
-        label: 'Know Me',
-        href: '/kyc'
+        label: 'KYC',
+        subItems: [
+          {
+            icon: <FaIdCard />,
+            label: 'View KYC',
+            href: '/kyc'
+          },
+          {
+            icon: <FaFileAlt />,
+            label: 'Upload Documents',
+            href: '/kyc/upload'
+          },
+          {
+            icon: <FaEdit />,
+            label: 'Edit KYC',
+            href: '/kyc/edit'
+          }
+        ]
       },
       {
         icon: <FaCalendarAlt />,
@@ -128,26 +144,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         label: 'Reports',
         href: '/reports'
       },
-      {
-        icon: <FaReceipt />,
-        label: 'Expense Reimbursement',
-        href: '/expense'
-      },
+
       {
         icon: <FaHeadset />,
         label: 'Helpdesk',
         href: '/helpdesk'
       },
-      {
-        icon: <FaFileContract />,
-        label: 'Policy and Document',
-        href: '/policy'
-      },
-      {
-        icon: <FaDoorOpen />,
-        label: 'Resignation',
-        href: '/resignation'
-      }
     ];
   };
 
