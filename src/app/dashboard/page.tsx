@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { FaBirthdayCake, FaTrophy, FaCalendarCheck, FaUserClock, FaProjectDiagram, FaClipboardList, FaFileAlt, FaPlusCircle, FaFileUpload, FaRegCalendarPlus, FaTicketAlt } from 'react-icons/fa';
+<<<<<<< HEAD
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartOptions } from 'chart.js';
+=======
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartOptions, ChartData } from 'chart.js';
+>>>>>>> parent of b2fe982 ("code spliting of the page of the dashboard screen")
 import { Pie, Bar } from 'react-chartjs-2';
 import AttendanceAnalytics from '@/components/dashboard/AttendanceAnalytics';
 import Confetti from 'react-confetti';
@@ -10,6 +14,37 @@ import { useUser } from '@/context/UserContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
+<<<<<<< HEAD
+=======
+interface MonthlyStats {
+  success: boolean;
+  message: string;
+  data: {
+    month: number;
+    year: number;
+    workingDays: number;
+    presentDays: number;
+    absentDays: number;
+    halfDays: number;
+    overtimeDays: number;
+    lateArrivals: number;
+    earlyArrivals: number;
+    earlyLeaves: number;
+    attendanceRate: string;
+    summary: {
+      totalDays: number;
+      daysPresent: number;
+      daysAbsent: number;
+      punctualityIssues: {
+        lateArrivals: number;
+        earlyArrivals: number;
+        earlyLeaves: number;
+      }
+    }
+  }
+}
+
+>>>>>>> parent of b2fe982 ("code spliting of the page of the dashboard screen")
 interface BirthdayResponse {
   success: boolean;
   message: string;
@@ -73,6 +108,13 @@ export default function Dashboard() {
   const [anniversaries, setAnniversaries] = useState<WorkAnniversaryResponse | null>(null);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalanceResponse | null>(null);
   const [attendanceActivities, setAttendanceActivities] = useState<any[]>([]);
+<<<<<<< HEAD
+=======
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1); // 1-12
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [monthlyStatsCache, setMonthlyStatsCache] = useState<Record<string, MonthlyStats>>({});
+>>>>>>> parent of b2fe982 ("code spliting of the page of the dashboard screen")
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -172,6 +214,7 @@ export default function Dashboard() {
         fetch('https://cafm.zenapi.co.in/api/attendance/EFMS3295/recent-activities')
       ]);
 
+<<<<<<< HEAD
       const [birthdaysData, anniversariesData, leaveBalanceData, attendanceData] = await Promise.all([
         birthdaysRes.json(),
         anniversariesRes.json(),
@@ -184,9 +227,72 @@ export default function Dashboard() {
       setLeaveBalance(leaveBalanceData);
       if (attendanceData.status === 'success') {
         setAttendanceActivities(attendanceData.data.activities);
+=======
+      // Check cache first for monthly stats
+      if (monthlyStatsCache[monthYearKey]) {
+        // If cached, directly use it for the currently selected month view
+        if (monthToFetch === currentMonth && yearToFetch === currentYear) {
+           setMonthlyStats(monthlyStatsCache[monthYearKey]);
+        }
+        // Only fetch other data if it's the initial full load and data is cached
+        if (showLoading) {
+           const [birthdaysRes, anniversariesRes, leaveBalanceRes, attendanceRes] = await Promise.all([
+            fetch('https://cafm.zenapi.co.in/api/kyc/birthdays/today'),
+            fetch('https://cafm.zenapi.co.in/api/kyc/work-anniversaries/today'),
+            fetch('https://cafm.zenapi.co.in/api/leave/balance/EFMS3295'),
+            fetch('https://cafm.zenapi.co.in/api/attendance/EFMS3295/recent-activities'),
+          ]);
+
+           const [birthdaysData, anniversariesData, leaveBalanceData, attendanceData] = await Promise.all([
+             birthdaysRes.json(),
+             anniversariesRes.json(),
+             leaveBalanceRes.json(),
+             attendanceRes.json(),
+           ]);
+
+           setBirthdays(birthdaysData);
+           setAnniversaries(anniversariesData);
+           setLeaveBalance(leaveBalanceData);
+           if (attendanceData.status === 'success') {
+             setAttendanceActivities(attendanceData.data.activities);
+           }
+        }
+      } else {
+        // Fetch all data if monthly stats not in cache or it's initial load
+        const [birthdaysRes, anniversariesRes, leaveBalanceRes, attendanceRes, monthlyStatsRes] = await Promise.all([
+          fetch('https://cafm.zenapi.co.in/api/kyc/birthdays/today'),
+          fetch('https://cafm.zenapi.co.in/api/kyc/work-anniversaries/today'),
+          fetch('https://cafm.zenapi.co.in/api/leave/balance/EFMS3295'),
+          fetch('https://cafm.zenapi.co.in/api/attendance/EFMS3295/recent-activities'),
+          fetch(`https://cafm.zenapi.co.in/api/attendance/EFMS3295/monthly-stats?month=${monthToFetch}&year=${yearToFetch}`)
+        ]);
+
+        const [birthdaysData, anniversariesData, leaveBalanceData, attendanceData, monthlyStatsData] = await Promise.all([
+          birthdaysRes.json(),
+          anniversariesRes.json(),
+          leaveBalanceRes.json(),
+          attendanceRes.json(),
+          monthlyStatsRes.json()
+        ]);
+
+        setBirthdays(birthdaysData);
+        setAnniversaries(anniversariesData);
+        setLeaveBalance(leaveBalanceData);
+        setMonthlyStats(monthlyStatsData);
+        // Store in cache if successful
+        if (monthlyStatsData?.success) {
+            setMonthlyStatsCache(prev => ({ ...prev, [monthYearKey]: monthlyStatsData }));
+        }
+        if (attendanceData.status === 'success') {
+          setAttendanceActivities(attendanceData.data.activities);
+        }
+>>>>>>> parent of b2fe982 ("code spliting of the page of the dashboard screen")
       }
+
+
     } catch (error) {
       console.error('Error fetching data:', error);
+      // Potentially set error states here
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -195,17 +301,53 @@ export default function Dashboard() {
 
   // Polling setup
   useEffect(() => {
-    fetchData();
+    fetchData(); // Fetch for current month on mount
 
     // Poll every 5 minutes
     const pollInterval = setInterval(() => {
       setRefreshing(true);
+<<<<<<< HEAD
       fetchData(false);
+=======
+      // When polling, don't show the full page loader or re-fetch monthly stats if cached
+      // Only refresh birthday/anniversary/recent activity data
+      // Also fetch the current month's stats again to keep it updated if needed
+      fetchData(false, currentMonth, currentYear);
+>>>>>>> parent of b2fe982 ("code spliting of the page of the dashboard screen")
     }, 5 * 60 * 1000);
 
     return () => clearInterval(pollInterval);
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount
 
+
+<<<<<<< HEAD
+=======
+  // Effect to update displayed monthly stats when currentMonth or currentYear changes
+  // This useEffect also triggers fetching if data is not in cache for the selected month
+   useEffect(() => {
+       // When "All" is selected (currentMonth === 0 or some indicator),
+       // we don't update monthlyStats, we rely on monthlyStatsCache for the grouped chart.
+       if (currentMonth > 0) { // Check if a specific month is selected
+           const monthYearKey = `${currentMonth}-${currentYear}`;
+           if (monthlyStatsCache[monthYearKey]) {
+               setMonthlyStats(monthlyStatsCache[monthYearKey]);
+           } else {
+               // Only fetch if the cache doesn't have it.
+               // Ensure initial data is loaded before triggering fetches based on month change.
+               if (monthlyStats !== null || Object.keys(monthlyStatsCache).length > 0) {
+                  fetchData(false, currentMonth, currentYear); // Fetch new data without showing full page loader
+               } else {
+                   // This case handles the very first load if cache is empty and monthlyStats is null
+                   fetchData(true, currentMonth, currentYear);
+               }
+           }
+       }
+       // If currentMonth is 0 (for 'All'), monthlyStats will remain null, and renderAttendanceChart
+       // will use monthlyStatsCache.
+
+   }, [currentMonth, currentYear, monthlyStatsCache]); // Dependency array includes currentMonth, currentYear, and cache
+
+>>>>>>> parent of b2fe982 ("code spliting of the page of the dashboard screen")
   useEffect(() => {
     if (birthdays?.success && birthdays.data && birthdays.data.length > 0) {
       setShowCelebration(true);
@@ -233,7 +375,22 @@ export default function Dashboard() {
     <button
       onClick={() => {
         setRefreshing(true);
+<<<<<<< HEAD
         fetchData(false);
+=======
+        // When refreshing, fetch data for the currently selected month if a specific month is selected,
+        // otherwise re-fetch data for all months in cache if "All" is selected.
+        if (currentMonth > 0) {
+          fetchData(false, currentMonth, currentYear);
+        } else {
+           // To refresh "All" months, we'd ideally re-fetch data for each month in the cache.
+           // For simplicity here, we'll just clear the cache and trigger a re-fetch of the current month,
+           // assuming the user might then re-select "All". A more robust solution would iterate
+           // through the keys in monthlyStatsCache and call fetchData for each, or have a dedicated "refresh all" endpoint.
+           setMonthlyStatsCache({});
+           fetchData(false, new Date().getMonth() + 1, new Date().getFullYear()); // Fetch current month after clearing
+        }
+>>>>>>> parent of b2fe982 ("code spliting of the page of the dashboard screen")
       }}
       className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white text-gray-600
         rounded-full text-sm font-medium transition-all duration-300 hover:shadow-md
