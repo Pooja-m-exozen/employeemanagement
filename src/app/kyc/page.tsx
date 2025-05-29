@@ -1,751 +1,1064 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { KYCRecord } from '@/types/kyc';
-import { getAllKYCRecords, getKYCByEmail, kycService } from '@/services/kyc';
-import { format } from 'date-fns';
-import { FaSpinner, FaSearch, FaEye, FaTimes, FaFilter, FaEdit, FaFileAlt } from 'react-icons/fa';
+import { FaSpinner, FaSearch, FaEye, FaTimes, FaFilter, FaEdit, FaFileAlt, FaUser, FaEnvelope, FaPhone, FaIdCard, FaMapMarkerAlt, FaTimesCircle, FaExclamationCircle, FaCheckCircle, FaHome, FaUserCircle, FaBuilding, FaAddressCard, FaQuestionCircle, FaInfoCircle, FaLightbulb, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
 import { isAuthenticated, isEmployee, getUserRole } from '@/services/auth';
 import { useRouter } from 'next/navigation';
+import { Tab } from '@headlessui/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Tooltip } from 'react-tooltip';
 
-interface Document {
-  type: string;
-  url: string;
-  uploadedAt: string;
-  _id: string;
-}
-
-interface DocumentsResponse {
+interface KYCResponse {
   message: string;
-  documents: Document[];
+  kycData: {
+    personalDetails: {
+      employeeId: string;
+      projectName: string;
+      fullName: string;
+      fathersName: string;
+      mothersName: string;
+      gender: string;
+      dob: string;
+      phoneNumber: string;
+      designation: string;
+      dateOfJoining: string;
+      nationality: string;
+      religion: string;
+      maritalStatus: string;
+      bloodGroup: string;
+      uanNumber: string;
+      esicNumber: string;
+      experience: string;
+      educationalQualification: string;
+      languages: string[];
+      employeeImage: string;
+      email: string;
+      workType: string;
+    };
+    addressDetails: {
+      permanentAddress: {
+        state: string;
+        city: string;
+        street: string;
+        postalCode: string;
+      };
+      currentAddress: {
+        state: string;
+        city: string;
+        street: string;
+        postalCode: string;
+      };
+    };
+    bankDetails: {
+      bankName: string;
+      branchName: string;
+      accountNumber: string;
+      ifscCode: string;
+    };
+    identificationDetails: {
+      identificationType: string;
+      identificationNumber: string;
+    };
+    emergencyContact: {
+      name: string;
+      phone: string;
+      relationship: string;
+      aadhar: string;
+    };
+    _id: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    documents: Array<{
+      type: string;
+      url: string;
+      uploadedAt: string;
+      _id: string;
+    }>;
+  };
 }
 
-export default function KYCViewPage() {
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
+export default function ViewKYC() {
   const router = useRouter();
-  const [kycRecord, setKycRecord] = useState<KYCRecord | null>(null);
+  const [kycResponse, setKYCResponse] = useState<KYCResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingRecord, setEditingRecord] = useState<KYCRecord | null>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [showDocuments, setShowDocuments] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [activeSection, setActiveSection] = useState('personal');
+  const [completionStatus, setCompletionStatus] = useState({
+    personal: false,
+    address: false,
+    bank: false,
+    emergency: false,
+    documents: false
+  });
+  const [showQuickNav, setShowQuickNav] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push('/login');
       return;
     }
-    fetchKYCRecord();
-    fetchDocuments();
+    fetchKYCData();
   }, [router]);
 
-  const fetchKYCRecord = async () => {
+  const fetchKYCData = async () => {
     try {
-      const userEmail = localStorage.getItem('userEmail');
-      if (!userEmail) {
-        setError('User email not found');
-        setLoading(false);
-        return;
-      }
-
-      const record = await getKYCByEmail(userEmail);
-      setKycRecord(record);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching KYC record:', error);
-      setError('Failed to fetch KYC record');
-      setLoading(false);
-    }
-  };
-
-  const fetchDocuments = async () => {
-    try {
-      const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295/documents');
-      const data: DocumentsResponse = await response.json();
-      setDocuments(data.documents);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-    }
-  };
-
-  const handleEdit = (record: KYCRecord) => {
-    setEditingRecord(record);
-  };
-
-  const handleSaveEdit = async (updatedRecord: KYCRecord) => {
-    try {
-      const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${updatedRecord.personalDetails.employeeId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedRecord),
-      });
-
-      const data = await response.json();
-      if (data.message === "KYC form updated successfully") {
-        setKycRecord(data.updatedKYC);
-      setEditingRecord(null);
-        // Show success message
-        alert('KYC information updated successfully');
-      } else {
-        throw new Error('Failed to update KYC information');
-      }
-    } catch (error) {
-      console.error('Error updating KYC:', error);
-      alert('Failed to update KYC information. Please try again.');
-    }
-  };
-
-  const handleViewDocument = (document: Document) => {
-    setSelectedDocument(document);
-  };
-
-  const handleCloseDocument = () => {
-    setSelectedDocument(null);
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      setSelectedFile(event.target.files[0]);
-      setUploadError(null); // Clear previous errors on new file selection
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      setUploadError('Please select a file to upload.');
-      return;
-    }
-
-    setUploading(true);
-    setUploadError(null);
-
-    const formData = new FormData();
-    formData.append('document', selectedFile);
-    // You might need to append other data like user ID or document type
-    // formData.append('employeeId', kycRecord.personalDetails.employeeId);
-
-    try {
-      // TODO: Replace with your actual document upload API endpoint
-      const response = await fetch('/api/upload-document', { 
-        method: 'POST',
-        body: formData,
-        // Note: Do not set Content-Type header for FormData, the browser does it automatically
-      });
-
+      const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295');
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Upload failed');
+        throw new Error('Failed to fetch KYC data');
       }
-
-      // Assuming the API returns the newly uploaded document details
-      const result = await response.json();
-      // Assuming the API response has a similar structure to the documents fetched previously
-      // You might need to adjust this based on your actual API response structure
-      const newDocument: Document = result.document; // Adjust based on API response
-
-      setDocuments([...documents, newDocument]); // Add the new document to the list
-      setSelectedFile(null); // Clear the selected file input
-      alert('Document uploaded successfully!');
-
-    } catch (error: any) {
-      console.error('Error uploading document:', error);
-      setUploadError(`Upload failed: ${error.message}`);
+      const data = await response.json();
+      setKYCResponse(data);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch KYC data');
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return 'bg-green-50 text-green-700 ring-green-600/20';
+      case 'pending':
+        return 'bg-yellow-50 text-yellow-700 ring-yellow-600/20';
+      case 'rejected':
+        return 'bg-red-50 text-red-700 ring-red-600/20';
+      default:
+        return 'bg-gray-50 text-gray-700 ring-gray-600/20';
+    }
+  };
+
+  // Calculate completion percentage
+  const calculateCompletion = () => {
+    const sections = Object.values(completionStatus);
+    const completed = sections.filter(Boolean).length;
+    return Math.round((completed / sections.length) * 100);
+  };
+
+  // Check section completion
+  useEffect(() => {
+    if (kycResponse?.kycData) {
+      const { personalDetails, addressDetails, bankDetails, emergencyContact, documents } = kycResponse.kycData;
+      
+      setCompletionStatus({
+        personal: Object.values(personalDetails).every(val => val !== ''),
+        address: Object.values(addressDetails.permanentAddress).every(val => val !== '') && 
+                Object.values(addressDetails.currentAddress).every(val => val !== ''),
+        bank: Object.values(bankDetails).every(val => val !== ''),
+        emergency: Object.values(emergencyContact).every(val => val !== ''),
+        documents: documents.length > 0
+      });
+    }
+  }, [kycResponse]);
+
+  // Instructions component
+  const Instructions = () => (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 relative"
+    >
+      <button
+        onClick={() => setShowInstructions(false)}
+        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+      >
+        <FaTimes className="w-5 h-5" />
+      </button>
+      <div className="flex items-start gap-4">
+        <div className="p-3 bg-blue-100 rounded-xl">
+          <FaLightbulb className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">KYC Instructions</h3>
+          <ul className="space-y-2 text-gray-600">
+            <li className="flex items-center gap-2">
+              <FaCheckCircle className="w-4 h-4 text-green-500" />
+              Complete all sections for full verification
+            </li>
+            <li className="flex items-center gap-2">
+              <FaCheckCircle className="w-4 h-4 text-green-500" />
+              Ensure all documents are clear and legible
+            </li>
+            <li className="flex items-center gap-2">
+              <FaCheckCircle className="w-4 h-4 text-green-500" />
+              Keep your information up to date
+            </li>
+          </ul>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  // Progress Bar component
+  const ProgressBar = () => (
+    <div className="bg-white rounded-2xl p-6 mb-8 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">KYC Completion Status</h3>
+        <span className="text-sm font-medium text-gray-500">{calculateCompletion()}% Complete</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div
+          className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+          style={{ width: `${calculateCompletion()}%` }}
+        />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+        {Object.entries(completionStatus).map(([section, isComplete]) => (
+          <div
+            key={section}
+            className="flex items-center gap-2"
+            data-tooltip-id={`section-${section}`}
+          >
+            {isComplete ? (
+              <FaCheckCircle className="w-4 h-4 text-green-500" />
+            ) : (
+              <FaExclamationCircle className="w-4 h-4 text-yellow-500" />
+            )}
+            <span className="text-sm font-medium capitalize text-gray-700">
+              {section}
+            </span>
+            <Tooltip id={`section-${section}`}>
+              {isComplete ? 'Section completed' : 'Section pending completion'}
+            </Tooltip>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Help Button component
+  const HelpButton = () => (
+    <button
+      onClick={() => setShowInstructions(true)}
+      className="fixed bottom-8 right-8 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
+      data-tooltip-id="help-tooltip"
+    >
+      <FaQuestionCircle className="w-6 h-6" />
+      <Tooltip id="help-tooltip">Need help? Click for instructions</Tooltip>
+    </button>
+  );
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <FaSpinner className="animate-spin text-4xl text-blue-600" />
-        <p className="text-black">Loading KYC record...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin text-blue-600">
+          <FaSpinner className="w-12 h-12" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="text-red-500 text-center p-4 bg-red-50 rounded-lg">
-          <p className="font-semibold">{error}</p>
-          <button 
-            onClick={fetchKYCRecord}
-            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-          >
-            Try Again
-          </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-red-50 text-red-600 p-6 rounded-2xl flex items-center gap-3 max-w-lg w-full shadow-lg">
+          <FaTimesCircle className="w-6 h-6 flex-shrink-0" />
+          <p className="text-lg font-medium">{error}</p>
         </div>
       </div>
     );
   }
 
-  if (!kycRecord) {
+  if (!kycResponse?.kycData) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-gray-100 max-w-md">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No KYC Record Found</h2>
-          <p className="text-gray-600 mb-4">You haven't submitted your KYC information yet.</p>
-          <button 
-            onClick={() => router.push('/kyc/submit')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-          >
-            Submit KYC Form
-          </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-yellow-50 text-yellow-600 p-6 rounded-2xl flex items-center gap-3 max-w-lg w-full shadow-lg">
+          <FaExclamationCircle className="w-6 h-6 flex-shrink-0" />
+          <p className="text-lg font-medium">No KYC data available</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="pt-0 px-0 bg-gradient-to-br from-blue-50 via-white to-blue-50 min-h-screen font-sans">
-      <div className="mx-auto pt-0 pb-2 px-0 sm:px-0 lg:px-0">
-        <div className="w-full bg-white shadow-xl border border-gray-100 pt-0 px-4 pb-8 sm:px-4 sm:pb-10 flex flex-col gap-10">
-          {/* Header Row */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-gray-200">
-            {/* Left: Employee image, name, ID, designation */}
-            {/* Removed employee image, name, ID, designation as requested */}
-            {/* Right: Status and last updated */}
-            <div className="flex flex-col items-start sm:items-end gap-3 ml-auto justify-center">
-              {kycRecord.status === 'Approved' ? (
-                 <div className="flex items-center gap-2">
-                   <span className="w-5 h-5 bg-green-500 rounded-full block shadow-sm"></span>
-                   <span className="text-lg font-bold text-green-700">Approved</span>
-                 </div>
-              ) : (
-                <>
-                  <span className={`px-6 py-2.5 rounded-xl text-lg font-bold shadow-sm
-                    ${kycRecord.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-                      'bg-red-50 text-red-700 border border-red-200'}`}>
-                    {kycRecord.status}
-                  </span>
-                  <span className="text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-                    Last updated: {format(new Date(kycRecord.updatedAt), 'PPpp')}
-                  </span>
-                </>
-              )}
+  const { kycData } = kycResponse;
+  
+  // Fix the TypeScript error by creating a mapping type
+  type CompletionStatusKey = 'personal' | 'address' | 'bank' | 'emergency' | 'documents';
+  
+  // Map navigation items to section keys
+  const navigationItems = [
+    { icon: FaUserCircle, label: 'Personal Info', id: 0, key: 'personal' as CompletionStatusKey },
+    { icon: FaAddressCard, label: 'Address', id: 1, key: 'address' as CompletionStatusKey },
+    { icon: FaBuilding, label: 'Bank Details', id: 2, key: 'bank' as CompletionStatusKey },
+    { icon: FaPhone, label: 'Emergency Contact', id: 3, key: 'emergency' as CompletionStatusKey },
+    { icon: FaFileAlt, label: 'Documents', id: 4, key: 'documents' as CompletionStatusKey },
+  ];
+
+  // Helper function for address field tooltips
+  const getAddressFieldTooltip = (field: string) => {
+    switch (field) {
+      case 'street':
+        return 'Your street address including house/apartment number';
+      case 'city':
+        return 'The city or town where you reside';
+      case 'state':
+        return 'Your state of residence';
+      case 'postalCode':
+        return 'Your area PIN code';
+      default:
+        return '';
+    }
+  };
+
+  // Helper functions for document handling
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileSize = (url: string) => {
+    // This is a placeholder. In a real application, you would get the actual file size
+    return Math.floor(Math.random() * 5 * 1024 * 1024); // Random size up to 5MB
+  };
+
+  const getFileExtension = (url: string) => {
+    return url.split('.').pop() || '';
+  };
+
+  // Left Side Navigation component
+  const LeftNavigation = () => (
+    <div className="w-80 h-screen overflow-y-auto bg-white shadow-lg z-40 hidden lg:block">
+      <div className="h-full flex flex-col">
+        {/* Profile Section */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center gap-4 mb-4">
+            {kycData.personalDetails.employeeImage ? (
+              <div className="relative">
+                <img
+                  src={kycData.personalDetails.employeeImage}
+                  alt="Employee"
+                  className="w-16 h-16 rounded-2xl object-cover ring-4 ring-blue-100"
+                />
+                <div className="absolute -bottom-2 -right-2">
+                  <div className={classNames(
+                    'w-5 h-5 rounded-full border-2 border-white',
+                    kycData.status.toLowerCase() === 'approved' ? 'bg-green-500' :
+                    kycData.status.toLowerCase() === 'pending' ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  )}/>
+                </div>
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
+                <FaUser className="w-8 h-8 text-blue-500" />
+              </div>
+            )}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {kycData.personalDetails.fullName}
+              </h2>
+              <p className="text-sm text-gray-500">{kycData.personalDetails.employeeId}</p>
             </div>
           </div>
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Personal Details */}
-            <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl border border-blue-100 flex flex-col gap-6 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="flex items-center gap-4 mb-2">
-                <span className="text-blue-600 bg-blue-50 p-3.5 rounded-xl flex-shrink-0 border border-blue-100">
-                  <svg xmlns='http://www.w3.org/2000/svg' className='h-7 w-7' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
-                </span>
-                <h2 className="text-2xl font-bold text-blue-900">Personal Details</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
-                <div className="bg-white p-4 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-1">Date of Birth</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.personalDetails.dob}</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-1">Phone Number</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.personalDetails.phoneNumber}</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-1">Date of Joining</div>
-                  <div className="text-gray-900 text-lg font-semibold">{format(new Date(kycRecord.personalDetails.dateOfJoining), 'PP')}</div>
-                </div>
-              </div>
+          
+          {/* Completion Status */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600">Completion</span>
+              <span className="text-sm font-semibold text-blue-600">{calculateCompletion()}%</span>
             </div>
-
-            {/* Emergency Contact */}
-            <div className="bg-gradient-to-br from-red-50 to-white p-8 rounded-2xl border border-red-100 flex flex-col gap-6 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="flex items-center gap-4 mb-2">
-                <span className="text-red-600 bg-red-50 p-3.5 rounded-xl flex-shrink-0 border border-red-100">
-                  <svg xmlns='http://www.w3.org/2000/svg' className='h-7 w-7' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' /></svg>
-                </span>
-                <h2 className="text-2xl font-bold text-red-900">Emergency Contact</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
-                <div className="bg-white p-4 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-1">Name</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.emergencyContact.name}</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-1">Relationship</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.emergencyContact.relationship}</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-1">Phone</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.emergencyContact.phone}</div>
-                </div>
-              </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${calculateCompletion()}%` }}
+              />
             </div>
+          </div>
+        </div>
 
-            {/* Permanent Address */}
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl border border-green-100 flex flex-col gap-6 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="flex items-center gap-4 mb-2">
-                <span className="text-green-600 bg-green-50 p-3.5 rounded-xl flex-shrink-0 border border-green-100">
-                  <svg xmlns='http://www.w3.org/2000/svg' className='h-7 w-7' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 12l2-2m0 0l7-7 7 7M13 5v6h6m-6 0H7m6 0v6m0 0H7m6 0h6' /></svg>
-                </span>
-                <h2 className="text-2xl font-bold text-green-900">Permanent Address</h2>
-              </div>
-              <div className="bg-white p-6 rounded-xl border border-gray-100">
-                <div className="text-gray-900 text-lg font-semibold space-y-2">
-                  <div>{kycRecord.addressDetails.permanentAddress.street}</div>
-                  <div>{kycRecord.addressDetails.permanentAddress.city}, {kycRecord.addressDetails.permanentAddress.state}</div>
-                  <div className="text-blue-600">PIN: {kycRecord.addressDetails.permanentAddress.postalCode}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Current Address */}
-            <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl border border-blue-100 flex flex-col gap-6 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="flex items-center gap-4 mb-2">
-                <span className="text-blue-600 bg-blue-50 p-3.5 rounded-xl flex-shrink-0 border border-blue-100">
-                  <svg xmlns='http://www.w3.org/2000/svg' className='h-7 w-7' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17.657 16.657L13.414 12.414a2 2 0 00-2.828 0l-4.243 4.243a8 8 0 1111.314 0z' /><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
-                </span>
-                <h2 className="text-2xl font-bold text-blue-900">Current Address</h2>
-              </div>
-              <div className="bg-white p-6 rounded-xl border border-gray-100">
-                <div className="text-gray-900 text-lg font-semibold space-y-2">
-                  <div>{kycRecord.addressDetails.currentAddress.street}</div>
-                  <div>{kycRecord.addressDetails.currentAddress.city}, {kycRecord.addressDetails.currentAddress.state}</div>
-                  <div className="text-blue-600">PIN: {kycRecord.addressDetails.currentAddress.postalCode}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bank Details (full width) */}
-            <div className="bg-gradient-to-br from-purple-50 to-white p-8 rounded-2xl border border-purple-100 md:col-span-2 flex flex-col gap-6 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="flex items-center gap-4 mb-2">
-                <span className="text-purple-600 bg-purple-50 p-3.5 rounded-xl flex-shrink-0 border border-purple-100">
-                  <svg xmlns='http://www.w3.org/2000/svg' className='h-7 w-7' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 10h2a2 2 0 012 2v6a2 2 0 01-2 2H3m0-10V6a2 2 0 012-2h14a2 2 0 012 2v4m-18 0h18' /></svg>
-                </span>
-                <h2 className="text-2xl font-bold text-purple-900">Bank Details</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-2">Bank Name</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.bankDetails.bankName}</div>
-                </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-2">Branch Name</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.bankDetails.branchName}</div>
-                </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-2">Account Number</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.bankDetails.accountNumber}</div>
-                </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-500 text-sm mb-2">IFSC Code</div>
-                  <div className="text-gray-900 text-lg font-semibold">{kycRecord.bankDetails.ifscCode}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Documents Section */}
-            <div className="bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl border border-gray-100 md:col-span-2 flex flex-col gap-6 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-600 bg-gray-50 p-3.5 rounded-xl flex-shrink-0 border border-gray-100">
-                    <FaFileAlt className="w-7 h-7" />
-                  </span>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
-                    <p className="text-gray-500 text-sm mt-1">View and manage your uploaded documents</p>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-                  Last updated: {documents.length > 0 ? format(new Date(documents[documents.length - 1].uploadedAt), 'PP') : 'N/A'}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {documents.map((doc) => (
-                  <div 
-                    key={doc._id} 
-                    className="group bg-white p-6 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300 flex flex-col gap-4 cursor-pointer"
-                    onClick={() => handleViewDocument(doc)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-grow">
-                        <div className={`p-3.5 rounded-xl ${
-                          doc.type === 'aadhar' ? 'bg-green-50 text-green-600 border border-green-100' :
-                          doc.type === 'profilePhoto' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                          'bg-purple-50 text-purple-600 border border-purple-100'
-                        }`}>
-                          <FaFileAlt className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 text-lg capitalize truncate">{doc.type}</div>
-                          <div className="text-sm text-gray-500">
-                            {format(new Date(doc.uploadedAt), 'PP')}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleViewDocument(doc)}
-                      className="w-full px-4 py-3 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-all duration-300 flex items-center justify-center gap-2 text-sm font-medium border border-blue-100"
-                    >
-                      <FaEye className="w-4 h-4" />
-                      View Document
-                    </button>
-                  </div>
-                ))}
-                {documents.length === 0 && (
-                  <div className="md:col-span-2 lg:col-span-3 text-center py-12 bg-gray-50 rounded-xl border border-gray-100">
-                    <FaFileAlt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg">No documents uploaded yet.</p>
-                  </div>
+        {/* Navigation Items */}
+        <div className="flex-1 overflow-y-auto py-6">
+          <nav className="px-4 space-y-2">
+            {navigationItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setSelectedTab(item.id)}
+                className={classNames(
+                  'w-full flex items-center justify-between p-4 rounded-xl transition-all duration-200',
+                  selectedTab === item.id
+                    ? 'bg-blue-50 text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-50'
                 )}
-              </div>
-
-              {/* Document Upload Section */}
-              <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-4">
-                <label className="block text-sm font-medium text-gray-700">Upload New Document:</label>
-                <div className="flex-grow flex items-center gap-4">
-                  <input
-                    type="file"
-                    onChange={handleFileChange}
-                    className="block w-full text-sm text-gray-900 border border-gray-200 rounded-xl cursor-pointer bg-gray-50 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all duration-300"
-                  />
-                   {selectedFile && <span className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">{selectedFile.name}</span>}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className={classNames(
+                    'w-5 h-5',
+                    selectedTab === item.id ? 'text-blue-600' : 'text-gray-400'
+                  )} />
+                  <span className="font-medium">{item.label}</span>
                 </div>
-                <button
-                  onClick={handleUpload}
-                  disabled={!selectedFile || uploading}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
-                >
-                  {uploading ? (
-                    <>
-                      <FaSpinner className="animate-spin w-4 h-4" /> Uploading...
-                    </>
+                <div className="flex items-center gap-2">
+                  {completionStatus[item.key] ? (
+                    <FaCheckCircle className="w-4 h-4 text-green-500" />
                   ) : (
-                    'Upload Document'
+                    <FaExclamationCircle className="w-4 h-4 text-yellow-500" />
                   )}
-                </button>
-              </div>
-               {uploadError && (
-                <div className="text-red-500 text-sm mt-2 bg-red-50 px-4 py-2 rounded-lg border border-red-100">{uploadError}</div>
-              )}
-            </div>
-          </div>
+                </div>
+              </button>
+            ))}
+          </nav>
+        </div>
 
-          {/* Edit Button */}
-          <div className="flex justify-end mt-8">
-            <button
-              onClick={() => handleEdit(kycRecord)}
-              className="inline-flex items-center px-8 py-4 text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 gap-3 shadow-md"
+        {/* Bottom Section */}
+        <div className="p-6 border-t border-gray-100">
+          <div className="bg-blue-50 rounded-xl p-4">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">Need Help?</h4>
+            <p className="text-sm text-blue-700 mb-3">
+              Contact HR support for assistance with your KYC verification.
+            </p>
+            <a
+              href="mailto:hr@support.com"
+              className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-2"
             >
-              <FaEdit className="w-5 h-5" /> Edit KYC Information
+              <FaEnvelope className="w-4 h-4" />
+              hr@support.com
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Mobile Header
+  const MobileHeader = () => (
+    <div className="sticky top-0 z-40 lg:hidden">
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {kycData.personalDetails.employeeImage ? (
+                <img
+                  src={kycData.personalDetails.employeeImage}
+                  alt="Employee"
+                  className="w-10 h-10 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <FaUser className="w-5 h-5 text-blue-500" />
+                </div>
+              )}
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">
+                  {kycData.personalDetails.fullName}
+                </h2>
+                <p className="text-sm text-gray-500">{kycData.personalDetails.employeeId}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowQuickNav(true)}
+              className="p-2 rounded-lg hover:bg-gray-100"
+            >
+              <FaFilter className="w-5 h-5 text-gray-500" />
             </button>
           </div>
         </div>
+        <div className="px-4 pb-4">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {navigationItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setSelectedTab(item.id)}
+                className={classNames(
+                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all',
+                  selectedTab === item.id
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+                {completionStatus[item.key] && (
+                  <FaCheckCircle className="w-4 h-4" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Quick Navigation component (updated)
+  const QuickNavigation = () => (
+    <motion.div
+      initial={{ opacity: 0, x: 300 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 300 }}
+      className="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl z-50"
+    >
+      <div className="h-full flex flex-col">
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Quick Navigation</h3>
+            <button
+              onClick={() => setShowQuickNav(false)}
+              className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
+            >
+              <FaTimes className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-6">
+          <div className="px-6 space-y-3">
+            {navigationItems.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setSelectedTab(item.id);
+                  setShowQuickNav(false);
+                }}
+                className={classNames(
+                  'w-full flex items-center justify-between p-4 rounded-xl transition-all',
+                  selectedTab === item.id
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'hover:bg-gray-50 text-gray-600'
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {completionStatus[item.key] ? (
+                    <FaCheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <FaExclamationCircle className="w-4 h-4 text-yellow-500" />
+                  )}
+                  <FaChevronRight className="w-4 h-4" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-100">
+          <div className="bg-blue-50 rounded-xl p-4">
+            <p className="text-sm text-blue-700 mb-2">Need assistance?</p>
+            <p className="text-xs text-blue-600">
+              Contact HR support at <br />
+              <a href="mailto:hr@support.com" className="font-medium">hr@support.com</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 lg:flex">
+      {/* Left Navigation */}
+      <LeftNavigation />
+
+      {/* Main Content */}
+      <div className="flex-1 bg-white">
+        <MobileHeader />
+        <div className="p-6 lg:p-10">
+          {showInstructions && <Instructions />}
+          <ProgressBar />
+          
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selectedTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-7xl mx-auto"
+            >
+              {selectedTab === 0 && (
+                <div className="space-y-8">
+                  <motion.div 
+                    className="p-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                        <FaUser className="text-blue-600 w-6 h-6" />
+                        <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                          Personal Information
+                        </h2>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <FaInfoCircle className="w-4 h-4" />
+                        <span>All fields marked with * are required</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 rounded-xl p-4 mb-8">
+                      <p className="text-sm text-blue-700">
+                        Your personal information helps us verify your identity and maintain accurate records. Please ensure all details are current and accurate.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[
+                        { 
+                          label: 'Project Name', 
+                          value: kycData.personalDetails.projectName, 
+                          icon: FaBuilding,
+                          tooltip: 'The name of the project you are currently assigned to'
+                        },
+                        { 
+                          label: "Father's Name", 
+                          value: kycData.personalDetails.fathersName, 
+                          icon: FaUser,
+                          tooltip: 'Your father\'s full legal name'
+                        },
+                        { 
+                          label: "Mother's Name", 
+                          value: kycData.personalDetails.mothersName, 
+                          icon: FaUser,
+                          tooltip: 'Your mother\'s full legal name'
+                        },
+                        { 
+                          label: 'Date of Birth', 
+                          value: kycData.personalDetails.dob, 
+                          icon: FaIdCard,
+                          tooltip: 'Your date of birth'
+                        },
+                        { 
+                          label: 'Phone Number', 
+                          value: kycData.personalDetails.phoneNumber, 
+                          icon: FaPhone,
+                          tooltip: 'Your contact phone number'
+                        },
+                        { 
+                          label: 'Email', 
+                          value: kycData.personalDetails.email, 
+                          icon: FaEnvelope,
+                          tooltip: 'Your email address'
+                        },
+                        { 
+                          label: 'Date of Joining', 
+                          value: kycData.personalDetails.dateOfJoining, 
+                          icon: FaBuilding,
+                          tooltip: 'The date you started working for the company'
+                        },
+                        { 
+                          label: 'Work Type', 
+                          value: kycData.personalDetails.workType, 
+                          icon: FaBuilding,
+                          tooltip: 'The type of work you do'
+                        },
+                        { 
+                          label: 'Experience', 
+                          value: kycData.personalDetails.experience, 
+                          icon: FaIdCard,
+                          tooltip: 'Your total years of work experience'
+                        },
+                        { 
+                          label: 'Education', 
+                          value: kycData.personalDetails.educationalQualification, 
+                          icon: FaIdCard,
+                          tooltip: 'Your highest level of education'
+                        },
+                        { 
+                          label: 'Languages', 
+                          value: kycData.personalDetails.languages.join(', '), 
+                          icon: FaIdCard,
+                          tooltip: 'The languages you can speak'
+                        },
+                        { 
+                          label: 'Blood Group', 
+                          value: kycData.personalDetails.bloodGroup, 
+                          icon: FaIdCard,
+                          tooltip: 'Your blood group'
+                        }
+                      ].map((field, index) => (
+                        <motion.div
+                          key={field.label}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: index * 0.05 }}
+                          className="group bg-gray-50 hover:bg-gray-100 rounded-xl p-6 transition-all duration-200"
+                          data-tooltip-id={`field-${field.label}`}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-blue-100/50 text-blue-600">
+                              <field.icon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">{field.label}</label>
+                              <p className="text-gray-900 font-medium mt-1">{field.value}</p>
+                            </div>
+                          </div>
+                          <Tooltip id={`field-${field.label}`}>{field.tooltip}</Tooltip>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              {selectedTab === 1 && (
+                <div className="space-y-8">
+                  <motion.div 
+                    className="p-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                        <FaMapMarkerAlt className="text-blue-600 w-6 h-6" />
+                        <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                          Address Information
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 rounded-xl p-4 mb-8">
+                      <p className="text-sm text-blue-700">
+                        Please provide both your permanent and current addresses. This information is crucial for official communications and documentation.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {['Permanent', 'Current'].map((type, index) => (
+                        <motion.div
+                          key={type}
+                          initial={{ opacity: 0, x: index === 0 ? -20 : 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: index * 0.2 }}
+                          className="bg-gray-50 hover:bg-gray-100 rounded-xl p-6 transition-all duration-200"
+                        >
+                          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
+                            <div className="p-2 rounded-lg bg-blue-100/50">
+                              <FaMapMarkerAlt className="text-blue-600 w-5 h-5" />
+                            </div>
+                            {type} Address
+                            <div 
+                              className="ml-2 text-blue-600 cursor-help"
+                              data-tooltip-id={`address-${type}`}
+                            >
+                              <FaInfoCircle className="w-4 h-4" />
+                            </div>
+                            <Tooltip id={`address-${type}`}>
+                              {type === 'Permanent' ? 
+                                'Your permanent residential address as per official records' : 
+                                'Your current residential address where you presently reside'
+                              }
+                            </Tooltip>
+                          </h3>
+                          <div className="space-y-4">
+                            {['street', 'city', 'state', 'postalCode'].map((field) => (
+                              <div 
+                                key={field} 
+                                className="group bg-gray-50 hover:bg-gray-100 rounded-lg p-4 transition-all duration-200"
+                                data-tooltip-id={`${type}-${field}`}
+                              >
+                                <label className="text-sm font-medium text-gray-500 capitalize">
+                                  {field.replace(/([A-Z])/g, ' $1').trim()}
+                                </label>
+                                <p className="text-gray-900 font-medium mt-1">
+                                  {kycData.addressDetails[type.toLowerCase() === 'permanent' ? 'permanentAddress' : 'currentAddress'][field as keyof typeof kycData.addressDetails.permanentAddress]}
+                                </p>
+                                <Tooltip id={`${type}-${field}`}>
+                                  {getAddressFieldTooltip(field)}
+                                </Tooltip>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              {selectedTab === 2 && (
+                <div className="space-y-8">
+                  <motion.div 
+                    className="p-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                        <FaBuilding className="text-blue-600 w-6 h-6" />
+                        <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                          Bank Details
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 rounded-xl p-4 mb-8">
+                      <div className="flex items-start gap-3">
+                        <FaInfoCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-blue-700 mb-2">
+                            Your bank account details are required for salary disbursement and other financial transactions.
+                          </p>
+                          <ul className="text-sm text-blue-600 list-disc list-inside space-y-1">
+                            <li>Ensure the account is active and in your name</li>
+                            <li>Double-check the IFSC code for accuracy</li>
+                            <li>Provide a cancelled cheque for verification</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {[
+                        { 
+                          label: 'Bank Name', 
+                          value: kycData.bankDetails.bankName, 
+                          icon: FaBuilding,
+                          tooltip: 'Name of your bank where you hold the account'
+                        },
+                        { 
+                          label: 'Branch Name', 
+                          value: kycData.bankDetails.branchName, 
+                          icon: FaBuilding,
+                          tooltip: 'The specific branch where your account is maintained'
+                        },
+                        { 
+                          label: 'Account Number', 
+                          value: kycData.bankDetails.accountNumber, 
+                          icon: FaIdCard,
+                          tooltip: 'Your bank account number',
+                          sensitive: true
+                        },
+                        { 
+                          label: 'IFSC Code', 
+                          value: kycData.bankDetails.ifscCode, 
+                          icon: FaIdCard,
+                          tooltip: 'Indian Financial System Code of your bank branch'
+                        }
+                      ].map((field, index) => (
+                        <motion.div
+                          key={field.label}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: index * 0.1 }}
+                          className="group bg-gray-50 hover:bg-gray-100 rounded-xl p-6 transition-all duration-200"
+                          data-tooltip-id={`bank-${field.label}`}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-blue-100/50 text-blue-600">
+                              <field.icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-sm font-medium text-gray-500">{field.label}</label>
+                              <p className="text-gray-900 font-medium mt-1 flex items-center gap-2">
+                                {field.sensitive ? (
+                                  <>
+                                    {'•'.repeat(field.value.length - 4)}
+                                    {field.value.slice(-4)}
+                                    <button 
+                                      className="text-blue-600 hover:text-blue-700 transition-colors"
+                                      onClick={() => {/* Add show/hide functionality */}}
+                                      data-tooltip-id={`show-${field.label}`}
+                                    >
+                                      <FaEye className="w-4 h-4" />
+                                    </button>
+                                    <Tooltip id={`show-${field.label}`}>Show/Hide {field.label}</Tooltip>
+                                  </>
+                                ) : (
+                                  field.value
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <Tooltip id={`bank-${field.label}`}>{field.tooltip}</Tooltip>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              {selectedTab === 3 && (
+                <div className="space-y-8">
+                  <motion.div 
+                    className="p-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-8 flex items-center gap-3">
+                      <FaPhone className="text-blue-600" />
+                      Emergency Contact
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {[
+                        { label: 'Name', value: kycData.emergencyContact.name, icon: FaUser },
+                        { label: 'Phone', value: kycData.emergencyContact.phone, icon: FaPhone },
+                        { label: 'Relationship', value: kycData.emergencyContact.relationship, icon: FaUserCircle }
+                      ].map((field, index) => (
+                        <motion.div
+                          key={field.label}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: index * 0.1 }}
+                          className="group bg-gray-50 hover:bg-gray-100 rounded-xl p-6 transition-all duration-200"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-blue-100/50 text-blue-600">
+                              <field.icon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">{field.label}</label>
+                              <p className="text-gray-900 font-medium mt-1 text-lg">{field.value}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              {selectedTab === 4 && (
+                <div className="space-y-8">
+                  <motion.div 
+                    className="p-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                        <FaFileAlt className="text-blue-600 w-6 h-6" />
+                        <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                          Documents
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 rounded-xl p-4 mb-8">
+                      <div className="flex items-start gap-3">
+                        <FaInfoCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-blue-700 mb-2">
+                            Please ensure all uploaded documents are:
+                          </p>
+                          <ul className="text-sm text-blue-600 list-disc list-inside space-y-1">
+                            <li>Clear and legible</li>
+                            <li>In valid format (PDF, JPG, PNG)</li>
+                            <li>Not exceeding 5MB in size</li>
+                            <li>Current and not expired</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {kycData.documents.map((doc, index) => (
+                        <motion.div
+                          key={doc._id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.4, delay: index * 0.1 }}
+                          whileHover={{ scale: 1.02 }}
+                          className="group relative cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-xl overflow-hidden transition-all duration-200"
+                          onClick={() => setSelectedImage(doc.url)}
+                          data-tooltip-id={`doc-${doc._id}`}
+                        >
+                          <div className="aspect-[3/2] overflow-hidden bg-gray-100">
+                            {doc.type.toLowerCase().includes('pdf') ? (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                <FaFileAlt className="w-12 h-12 text-gray-400" />
+                              </div>
+                            ) : (
+                              <img
+                                src={doc.url}
+                                alt={doc.type}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                              />
+                            )}
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white font-medium flex items-center gap-2 px-4 py-2 rounded-lg bg-black/20 backdrop-blur-sm">
+                              <FaEye className="w-5 h-5" />
+                              View Document
+                            </span>
+                          </div>
+                          <div className="p-4">
+                            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                              {doc.type.charAt(0).toUpperCase() + doc.type.slice(1)}
+                              <span className="text-xs font-normal text-gray-500">
+                                {new Date(doc.uploadedAt).toLocaleDateString()}
+                              </span>
+                            </h3>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-gray-500">
+                                {formatFileSize(getFileSize(doc.url))}
+                              </span>
+                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                              <span className="text-xs text-gray-500">
+                                {getFileExtension(doc.url).toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                          <Tooltip id={`doc-${doc._id}`}>Click to view document</Tooltip>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* Document Viewer Modal */}
-      {selectedDocument && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-6xl w-full mx-auto shadow-2xl transform transition-all overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700 sticky top-0 z-10 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${
-                  selectedDocument.type === 'aadhar' ? 'bg-green-100 text-green-600' :
-                  selectedDocument.type === 'profilePhoto' ? 'bg-blue-100 text-blue-600' :
-                  'bg-purple-100 text-purple-600'
-                }`}>
-                  <FaFileAlt className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white capitalize">{selectedDocument.type}</h2>
-                  <p className="text-sm text-blue-100">
-                    Uploaded on {format(new Date(selectedDocument.uploadedAt), 'PPpp')}
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={handleCloseDocument} 
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <FaTimes className="text-white w-5 h-5 hover:text-gray-100" />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto bg-gray-50">
-              <div className="relative aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-lg border border-gray-200">
+      <AnimatePresence>
+        {showQuickNav && <QuickNavigation />}
+      </AnimatePresence>
+      <HelpButton />
+      
+      {/* Enhanced Image Modal - Updated with better transitions */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-lg"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative max-w-5xl w-full rounded-2xl overflow-hidden bg-white/10 backdrop-blur-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="aspect-[16/9] relative">
                 <img
-                  src={selectedDocument.url}
-                  alt={selectedDocument.type}
+                  src={selectedImage}
+                  alt="Document Preview"
                   className="w-full h-full object-contain"
                 />
-              </div>
-              <div className="mt-8 flex justify-center">
-                <a
-                  href={selectedDocument.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-lg font-semibold shadow-md"
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/75 transition-colors"
                 >
-                  <FaEye className="w-5 h-5" />
-                  Open Document in New Tab
-                </a>
+                  <FaTimesCircle className="w-6 h-6" />
+                </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {editingRecord && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-6xl w-full mx-auto shadow-2xl transform transition-all overflow-hidden max-h-[90vh] flex flex-col border border-gray-200">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700 sticky top-0 z-10 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-white">Edit KYC Information</h2>
-              <button onClick={() => setEditingRecord(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <FaTimes className="text-white w-5 h-5 hover:text-gray-100" />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto">
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                handleSaveEdit(editingRecord);
-              }} className="space-y-8">
-                {/* Personal Details Section */}
-                <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-xl shadow-sm border border-blue-100">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <FaFileAlt className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-blue-900">Personal Details</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                      <input
-                        type="text"
-                        value={editingRecord.personalDetails.dob}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          personalDetails: {
-                            ...editingRecord.personalDetails,
-                            dob: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="DD-MM-YYYY"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                      <input
-                        type="text"
-                        value={editingRecord.personalDetails.phoneNumber}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          personalDetails: {
-                            ...editingRecord.personalDetails,
-                            phoneNumber: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Blood Group</label>
-                      <input
-                        type="text"
-                        value={editingRecord.personalDetails.bloodGroup}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          personalDetails: {
-                            ...editingRecord.personalDetails,
-                            bloodGroup: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter blood group"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Marital Status</label>
-                      <select
-                        value={editingRecord.personalDetails.maritalStatus}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          personalDetails: {
-                            ...editingRecord.personalDetails,
-                            maritalStatus: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-900 transition-colors"
-                      >
-                        <option value="Single">Single</option>
-                        <option value="Married">Married</option>
-                        <option value="Divorced">Divorced</option>
-                        <option value="Widowed">Widowed</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Emergency Contact Section */}
-                <div className="bg-gradient-to-br from-red-50 to-white p-8 rounded-xl shadow-sm border border-red-100">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-red-100 rounded-lg">
-                      <FaFileAlt className="w-6 h-6 text-red-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-red-900">Emergency Contact</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                      <input
-                        type="text"
-                        value={editingRecord.emergencyContact.name}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          emergencyContact: {
-                            ...editingRecord.emergencyContact,
-                            name: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter emergency contact name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                      <input
-                        type="text"
-                        value={editingRecord.emergencyContact.phone}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          emergencyContact: {
-                            ...editingRecord.emergencyContact,
-                            phone: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter emergency contact phone"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Relationship</label>
-                      <input
-                        type="text"
-                        value={editingRecord.emergencyContact.relationship}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          emergencyContact: {
-                            ...editingRecord.emergencyContact,
-                            relationship: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter relationship"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bank Details Section */}
-                <div className="bg-gradient-to-br from-purple-50 to-white p-8 rounded-xl shadow-sm border border-purple-100">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <FaFileAlt className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-purple-900">Bank Details</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
-                      <input
-                        type="text"
-                        value={editingRecord.bankDetails.bankName}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          bankDetails: {
-                            ...editingRecord.bankDetails,
-                            bankName: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter bank name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Branch Name</label>
-                      <input
-                        type="text"
-                        value={editingRecord.bankDetails.branchName}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          bankDetails: {
-                            ...editingRecord.bankDetails,
-                            branchName: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter branch name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
-                      <input
-                        type="text"
-                        value={editingRecord.bankDetails.accountNumber}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          bankDetails: {
-                            ...editingRecord.bankDetails,
-                            accountNumber: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter account number"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code</label>
-                      <input
-                        type="text"
-                        value={editingRecord.bankDetails.ifscCode}
-                        onChange={(e) => setEditingRecord({
-                          ...editingRecord,
-                          bankDetails: {
-                            ...editingRecord.bankDetails,
-                            ifscCode: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 text-gray-900 placeholder-gray-400 transition-colors"
-                        placeholder="Enter IFSC code"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-4 mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setEditingRecord(null)}
-                    className="px-6 py-3 text-sm font-semibold rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
