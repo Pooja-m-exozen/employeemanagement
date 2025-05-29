@@ -8,6 +8,7 @@ import type { ChartData, ChartOptions } from 'chart.js';
 import { useUser } from '@/context/UserContext';
 import Confetti from 'react-confetti';
 import { getDashboardData, getMonthlyStats, submitLeaveRequest, submitRegularization, uploadDocument, getLeaveBalance } from '@/services/dashboard';
+import { getEmployeeId } from '@/services/auth';
 import type { BirthdayResponse, WorkAnniversaryResponse, LeaveBalanceResponse, MonthlyStats, DepartmentStats, AnalyticsViewType, ChartType, LeaveType } from '../../types/dashboard';
 import { FaCalendarCheck, FaClipboardList, FaFileAlt, FaFileUpload, FaPlusCircle, FaRegCalendarPlus, FaTicketAlt, FaUserClock } from 'react-icons/fa';
 
@@ -17,6 +18,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 export default function Dashboard() {
   const router = useRouter();
   const userDetails = useUser();
+  const employeeId = getEmployeeId();
   const [birthdays, setBirthdays] = useState<BirthdayResponse | null>(null);
   const [anniversaries, setAnniversaries] = useState<WorkAnniversaryResponse | null>(null);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalanceResponse | null>(null);
@@ -143,7 +145,7 @@ export default function Dashboard() {
         }
       } else {
         // Fetch monthly stats
-        const monthlyStatsData = await getMonthlyStats('EFMS3295', monthToFetch, yearToFetch);
+        const monthlyStatsData = await getMonthlyStats(employeeId || '', monthToFetch, yearToFetch);
         
         // Update monthly stats and cache
         setMonthlyStatsCache(prev => ({
@@ -157,11 +159,11 @@ export default function Dashboard() {
       }
 
       // Fetch leave balance
-      const leaveBalanceData = await getLeaveBalance('EFMS3295');
+      const leaveBalanceData = await getLeaveBalance(employeeId || '');
       setLeaveBalance(leaveBalanceData);
 
       // Fetch other dashboard data
-      const data = await getDashboardData('EFMS3295', monthToFetch, yearToFetch);
+      const data = await getDashboardData(employeeId || '', monthToFetch, yearToFetch);
       setBirthdays(data.birthdays);
       setAnniversaries(data.anniversaries);
       setAttendanceActivities(data.attendanceActivities);
@@ -813,7 +815,7 @@ export default function Dashboard() {
     setRequestError(null);
     setRequestSuccess(null);
     try {
-      await submitLeaveRequest(userDetails?.employeeId, leaveRequestForm);
+      await submitLeaveRequest(employeeId || '', leaveRequestForm);
       setRequestSuccess('Leave request submitted successfully!');
       setLeaveRequestForm({
         leaveType: '',
@@ -845,7 +847,7 @@ export default function Dashboard() {
     setRegularizationError(null);
     setRegularizationSuccess(null);
     try {
-      await submitRegularization(userDetails?.employeeId, regularizationForm);
+      await submitRegularization(employeeId || '', regularizationForm);
       setRegularizationSuccess('Attendance regularization request submitted successfully!');
       setRegularizationForm({ date: '', punchInTime: '', punchOutTime: '', reason: '', status: 'Present' });
       setTimeout(() => setShowRegularizationModal(false), 1500);
@@ -863,7 +865,7 @@ export default function Dashboard() {
     setUploadSuccess(null);
     try {
       if (!uploadFile) throw new Error('Please select a file');
-      await uploadDocument(userDetails?.employeeId, uploadFile, uploadType, uploadDesc);
+      await uploadDocument(employeeId || '', uploadFile, uploadType, uploadDesc);
       setUploadSuccess('Document uploaded successfully!');
       setUploadFile(null);
       setUploadType('');

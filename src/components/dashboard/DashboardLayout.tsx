@@ -1,10 +1,12 @@
+"use client";
+
 import React, { ReactNode, useState, useEffect } from 'react';
 import type { JSX } from 'react';
 import Image from 'next/image';
 import { FaUserFriends, FaBuilding, FaFileAlt, FaTachometerAlt, FaSignOutAlt, FaChevronRight, FaPlus, FaChevronLeft, FaMinus, FaUser, FaCalendarAlt, FaMoneyBillWave, FaTasks, FaReceipt, FaHeadset, FaFileContract, FaDoorOpen, FaBell, FaSearch, FaIdCard, FaEnvelope, FaTimes, FaBars, FaCog, FaEdit, FaUserCheck, FaCalendarCheck, FaClipboardCheck, FaHistory } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { logout, isAuthenticated, getUserRole } from '@/services/auth';
+import { logout, isAuthenticated, getUserRole, getEmployeeId } from '@/services/auth';
 import { UserContext } from '@/context/UserContext';
 
 interface DashboardLayoutProps {
@@ -62,7 +64,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295');
+        const employeeId = getEmployeeId();
+        if (!employeeId) {
+          console.error('No employee ID found');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}`);
         const data = await response.json();
         if (data.kycData) {
           setUserDetails({
@@ -285,24 +294,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
     setUploading(true);
     setUploadError(null);
     try {
-      // 1. Upload image to your server or a public URL provider
-      // For demo, let's assume you get a URL after uploading
-      // Replace this with your actual upload logic
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('No employee ID found');
+      }
+
       const formData = new FormData();
       formData.append('image', selectedImage);
-      // Example: const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-      // const { imageUrl } = await uploadRes.json();
-      // For now, let's use a placeholder:
       const imageUrl = URL.createObjectURL(selectedImage);
 
-      // 2. Update profile image via API
-      const res = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295', {
+      const res = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeImage: imageUrl }),
       });
       if (!res.ok) throw new Error('Failed to update profile image');
-      // 3. Update UI
+      
       setUserDetails((prev) => prev ? { ...prev, employeeImage: imageUrl } : prev);
       setShowEditProfileModal(false);
       setSelectedImage(null);
