@@ -1,78 +1,193 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaUser, FaMapMarkerAlt, FaIdCard, FaSpinner, FaSave, FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
+import { FaUser, FaMapMarkerAlt, FaIdCard, FaSpinner, FaSave, FaExclamationCircle, FaCheckCircle, FaArrowLeft, FaGlobe, FaPhone, FaEnvelope, FaBirthdayCake, FaVenusMars, FaBuilding, FaCalendarAlt, FaUserTie, FaRing, FaTint, FaGraduationCap, FaLaptopHouse, FaLanguage, FaMoneyCheckAlt, FaUniversity, FaPhoneVolume, FaUserFriends, FaHeart, FaInfoCircle } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated } from '@/services/auth';
+import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface KYCData {
-  personalInfo: {
+  personalDetails: {
+    employeeId: string;
+    projectName: string;
     fullName: string;
-    email: string;
-    phone: string;
-    dateOfBirth: string;
+    fathersName: string;
+    mothersName: string;
     gender: string;
+    dob: string;
+    phoneNumber: string;
+    designation: string;
+    dateOfJoining: string;
     nationality: string;
+    religion: string;
+    maritalStatus: string;
+    bloodGroup: string;
+    uanNumber: string;
+    esicNumber: string;
+    experience: string;
+    educationalQualification: string;
+    languages: string[];
+    employeeImage: string;
+    email: string;
+    workType: string;
   };
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
+  addressDetails: {
+    permanentAddress: {
+      state: string;
+      city: string;
+      street: string;
+      postalCode: string;
+    };
+    currentAddress: {
+      state: string;
+      city: string;
+      street: string;
+      postalCode: string;
+    };
   };
-  identityInfo: {
-    aadharNumber: string;
-    panNumber: string;
-    passportNumber?: string;
+  bankDetails: {
+    bankName: string;
+    branchName: string;
+    accountNumber: string;
+    ifscCode: string;
   };
+  identificationDetails: {
+    identificationType: string;
+    identificationNumber: string;
+  };
+  emergencyContact: {
+    name: string;
+    phone: string;
+    relationship: string;
+    aadhar: string;
+  };
+  documents: Array<{
+    type: string;
+    url: string;
+    uploadedAt: string;
+    _id: string;
+  }>;
+  status: string;
 }
 
 const initialKYCData: KYCData = {
-  personalInfo: {
+  personalDetails: {
+    employeeId: '',
+    projectName: '',
     fullName: '',
-    email: '',
-    phone: '',
-    dateOfBirth: '',
+    fathersName: '',
+    mothersName: '',
     gender: '',
+    dob: '',
+    phoneNumber: '',
+    designation: '',
+    dateOfJoining: '',
     nationality: '',
+    religion: '',
+    maritalStatus: '',
+    bloodGroup: '',
+    uanNumber: '',
+    esicNumber: '',
+    experience: '',
+    educationalQualification: '',
+    languages: [],
+    employeeImage: '',
+    email: '',
+    workType: '',
   },
-  address: {
-    street: '',
-    city: '',
-    state: '',
-    country: '',
-    postalCode: '',
+  addressDetails: {
+    permanentAddress: {
+      state: '',
+      city: '',
+      street: '',
+      postalCode: '',
+    },
+    currentAddress: {
+      state: '',
+      city: '',
+      street: '',
+      postalCode: '',
+    },
   },
-  identityInfo: {
-    aadharNumber: '',
-    panNumber: '',
-    passportNumber: '',
+  bankDetails: {
+    bankName: '',
+    branchName: '',
+    accountNumber: '',
+    ifscCode: '',
   },
+  identificationDetails: {
+    identificationType: '',
+    identificationNumber: '',
+  },
+  emergencyContact: {
+    name: '',
+    phone: '',
+    relationship: '',
+    aadhar: '',
+  },
+  documents: [],
+  status: '',
 };
 
 const validateAndTransformKYCData = (data: any): KYCData => {
   return {
-    personalInfo: {
-      fullName: data?.personalInfo?.fullName || '',
-      email: data?.personalInfo?.email || '',
-      phone: data?.personalInfo?.phone || '',
-      dateOfBirth: data?.personalInfo?.dateOfBirth || '',
-      gender: data?.personalInfo?.gender || '',
-      nationality: data?.personalInfo?.nationality || '',
+    personalDetails: {
+      employeeId: data?.personalDetails?.employeeId || '',
+      projectName: data?.personalDetails?.projectName || '',
+      fullName: data?.personalDetails?.fullName || '',
+      fathersName: data?.personalDetails?.fathersName || '',
+      mothersName: data?.personalDetails?.mothersName || '',
+      gender: data?.personalDetails?.gender || '',
+      dob: data?.personalDetails?.dob || '',
+      phoneNumber: data?.personalDetails?.phoneNumber || '',
+      designation: data?.personalDetails?.designation || '',
+      dateOfJoining: data?.personalDetails?.dateOfJoining || '',
+      nationality: data?.personalDetails?.nationality || '',
+      religion: data?.personalDetails?.religion || '',
+      maritalStatus: data?.personalDetails?.maritalStatus || '',
+      bloodGroup: data?.personalDetails?.bloodGroup || '',
+      uanNumber: data?.personalDetails?.uanNumber || '',
+      esicNumber: data?.personalDetails?.esicNumber || '',
+      experience: data?.personalDetails?.experience || '',
+      educationalQualification: data?.personalDetails?.educationalQualification || '',
+      languages: data?.personalDetails?.languages || [],
+      employeeImage: data?.personalDetails?.employeeImage || '',
+      email: data?.personalDetails?.email || '',
+      workType: data?.personalDetails?.workType || '',
     },
-    address: {
-      street: data?.address?.street || '',
-      city: data?.address?.city || '',
-      state: data?.address?.state || '',
-      country: data?.address?.country || '',
-      postalCode: data?.address?.postalCode || '',
+    addressDetails: {
+      permanentAddress: {
+        state: data?.addressDetails?.permanentAddress?.state || '',
+        city: data?.addressDetails?.permanentAddress?.city || '',
+        street: data?.addressDetails?.permanentAddress?.street || '',
+        postalCode: data?.addressDetails?.permanentAddress?.postalCode || '',
+      },
+      currentAddress: {
+        state: data?.addressDetails?.currentAddress?.state || '',
+        city: data?.addressDetails?.currentAddress?.city || '',
+        street: data?.addressDetails?.currentAddress?.street || '',
+        postalCode: data?.addressDetails?.currentAddress?.postalCode || '',
+      },
     },
-    identityInfo: {
-      aadharNumber: data?.identityInfo?.aadharNumber || '',
-      panNumber: data?.identityInfo?.panNumber || '',
-      passportNumber: data?.identityInfo?.passportNumber || '',
+    bankDetails: {
+      bankName: data?.bankDetails?.bankName || '',
+      branchName: data?.bankDetails?.branchName || '',
+      accountNumber: data?.bankDetails?.accountNumber || '',
+      ifscCode: data?.bankDetails?.ifscCode || '',
     },
+    identificationDetails: {
+      identificationType: data?.identificationDetails?.identificationType || '',
+      identificationNumber: data?.identificationDetails?.identificationNumber || '',
+    },
+    emergencyContact: {
+      name: data?.emergencyContact?.name || '',
+      phone: data?.emergencyContact?.phone || '',
+      relationship: data?.emergencyContact?.relationship || '',
+      aadhar: data?.emergencyContact?.aadhar || '',
+    },
+    documents: data?.documents || [],
+    status: data?.status || '',
   };
 };
 
@@ -83,6 +198,16 @@ export default function EditKYC() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState('personal');
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  const sections = [
+    { id: 'personal', title: 'Personal Information', icon: FaUser },
+    { id: 'address', title: 'Address Details', icon: FaMapMarkerAlt },
+    { id: 'bank', title: 'Bank Information', icon: FaMoneyCheckAlt },
+    { id: 'emergency', title: 'Emergency Contact', icon: FaPhoneVolume },
+    { id: 'documents', title: 'Documents', icon: FaIdCard },
+  ];
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -100,8 +225,51 @@ export default function EditKYC() {
       }
       const data = await response.json();
       
-      // Validate and transform the data
-      const transformedData = validateAndTransformKYCData(data);
+      // Format date strings to YYYY-MM-DD format for input[type="date"]
+      const formatDate = (dateString: string) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+          // Try parsing DD-MM-YYYY format
+          const [day, month, year] = dateString.split('-');
+          if (day && month && year) {
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          }
+          return '';
+        }
+        return date.toISOString().split('T')[0];
+      };
+
+      // Transform the data
+      const transformedData = {
+        ...initialKYCData,
+        ...data.kycData,
+        personalDetails: {
+          ...initialKYCData.personalDetails,
+          ...data.kycData.personalDetails,
+          dob: formatDate(data.kycData.personalDetails.dob),
+          dateOfJoining: formatDate(data.kycData.personalDetails.dateOfJoining),
+        },
+        addressDetails: {
+          ...initialKYCData.addressDetails,
+          ...data.kycData.addressDetails,
+        },
+        bankDetails: {
+          ...initialKYCData.bankDetails,
+          ...data.kycData.bankDetails,
+        },
+        identificationDetails: {
+          ...initialKYCData.identificationDetails,
+          ...data.kycData.identificationDetails,
+        },
+        emergencyContact: {
+          ...initialKYCData.emergencyContact,
+          ...data.kycData.emergencyContact,
+        },
+        documents: data.kycData.documents || [],
+        status: data.kycData.status || '',
+      };
+
       setKYCData(transformedData);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to fetch KYC data');
@@ -111,8 +279,62 @@ export default function EditKYC() {
     }
   };
 
+  const isFormValid = () => {
+    switch (activeSection) {
+      case 'personal':
+        return (
+          kycData.personalDetails.fullName &&
+          kycData.personalDetails.gender &&
+          kycData.personalDetails.dob &&
+          kycData.personalDetails.phoneNumber &&
+          kycData.personalDetails.email &&
+          kycData.personalDetails.designation
+        );
+      case 'address':
+        return (
+          kycData.addressDetails.permanentAddress.street &&
+          kycData.addressDetails.permanentAddress.city &&
+          kycData.addressDetails.permanentAddress.state &&
+          kycData.addressDetails.permanentAddress.postalCode &&
+          kycData.addressDetails.currentAddress.street &&
+          kycData.addressDetails.currentAddress.city &&
+          kycData.addressDetails.currentAddress.state &&
+          kycData.addressDetails.currentAddress.postalCode
+        );
+      case 'bank':
+        return (
+          kycData.bankDetails.bankName &&
+          kycData.bankDetails.branchName &&
+          kycData.bankDetails.accountNumber &&
+          kycData.bankDetails.ifscCode
+        );
+      case 'emergency':
+        return (
+          kycData.emergencyContact.name &&
+          kycData.emergencyContact.phone &&
+          kycData.emergencyContact.relationship
+        );
+      default:
+        return true;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all sections before submission
+    const allSectionsValid = sections
+      .map(section => section.id)
+      .every(sectionId => {
+        setActiveSection(sectionId);
+        return isFormValid();
+      });
+
+    if (!allSectionsValid) {
+      setError('Please complete all required fields in each section');
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -133,6 +355,7 @@ export default function EditKYC() {
       }
 
       setSuccess('KYC information updated successfully!');
+      setCompletedSections(sections.map(section => section.id));
       
       // Update local state with validated response data
       const transformedData = validateAndTransformKYCData(data);
@@ -144,306 +367,665 @@ export default function EditKYC() {
     }
   };
 
+  const handleNextSection = () => {
+    if (isFormValid()) {
+      const currentIndex = sections.findIndex(s => s.id === activeSection);
+      if (currentIndex < sections.length - 1) {
+        setActiveSection(sections[currentIndex + 1].id);
+        if (!completedSections.includes(activeSection)) {
+          setCompletedSections([...completedSections, activeSection]);
+        }
+      }
+    } else {
+      setError('Please fill in all required fields before proceeding');
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <FaSpinner className="w-8 h-8 text-blue-600 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error && !kycData) {
-    return (
-      <div className="flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-lg">
-        <FaExclamationCircle className="w-5 h-5 flex-shrink-0" />
-        <p>{error}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <FaSpinner className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
+          <p className="mt-4 text-gray-600">Loading your information...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Personal Information */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-          <FaUser className="text-blue-600" />
-          Personal Information
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={kycData.personalInfo.fullName}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                personalInfo: { ...kycData.personalInfo, fullName: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              value={kycData.personalInfo.email}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                personalInfo: { ...kycData.personalInfo, email: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone
-            </label>
-            <input
-              type="tel"
-              value={kycData.personalInfo.phone}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                personalInfo: { ...kycData.personalInfo, phone: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date of Birth
-            </label>
-            <input
-              type="date"
-              value={kycData.personalInfo.dateOfBirth}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                personalInfo: { ...kycData.personalInfo, dateOfBirth: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gender
-            </label>
-            <select
-              value={kycData.personalInfo.gender}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                personalInfo: { ...kycData.personalInfo, gender: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nationality
-            </label>
-            <input
-              type="text"
-              value={kycData.personalInfo.nationality}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                personalInfo: { ...kycData.personalInfo, nationality: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
+    <div className="min-h-screen bg-gray-50">
+      {/* Instructions Panel */}
+      <div className="bg-blue-50 border-b border-blue-100">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FaInfoCircle className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-blue-900">KYC Information Guidelines</h2>
+              <ul className="mt-2 space-y-2 text-sm text-blue-700">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                  Fill in all required fields marked with an asterisk (*).
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                  Ensure all documents are clear and legible before uploading.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                  Double-check your bank details to avoid payment issues.
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Address Information */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-          <FaMapMarkerAlt className="text-blue-600" />
-          Address Information
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Street Address
-            </label>
-            <input
-              type="text"
-              value={kycData.address.street}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                address: { ...kycData.address, street: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Side Navigation */}
+          <div className="lg:w-64 flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-sm p-4 sticky top-8">
+              <nav className="space-y-1">
+                {sections.map((section) => {
+                  const isActive = activeSection === section.id;
+                  const isCompleted = completedSections.includes(section.id);
+                  
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveSection(section.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-600'
+                          : isCompleted
+                          ? 'text-green-600 hover:bg-gray-50'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <section.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className="font-medium">{section.title}</span>
+                      {isCompleted && (
+                        <FaCheckCircle className="w-4 h-4 text-green-600 ml-auto" />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+              
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Completion Status</span>
+                  <span className="font-medium text-blue-600">
+                    {Math.round((completedSections.length / sections.length) * 100)}%
+                  </span>
+                </div>
+                <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                    style={{ width: `${(completedSections.length / sections.length) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              City
-            </label>
-            <input
-              type="text"
-              value={kycData.address.city}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                address: { ...kycData.address, city: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              State
-            </label>
-            <input
-              type="text"
-              value={kycData.address.state}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                address: { ...kycData.address, state: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Country
-            </label>
-            <input
-              type="text"
-              value={kycData.address.country}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                address: { ...kycData.address, country: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Postal Code
-            </label>
-            <input
-              type="text"
-              value={kycData.address.postalCode}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                address: { ...kycData.address, postalCode: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
+
+          {/* Main Content */}
+          <div className="flex-1">
+            <div className="space-y-6">
+              {/* Back Button and Title */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => router.push('/kyc')}
+                  className="p-2 hover:bg-white rounded-xl transition-colors"
+                >
+                  <FaArrowLeft className="w-5 h-5 text-gray-500" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Edit KYC Information</h1>
+                  <p className="text-gray-500 mt-1">Update your personal and identity information</p>
+                </div>
+              </div>
+
+              {/* Form Sections */}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Keep the existing form sections but show/hide based on activeSection */}
+                <AnimatePresence mode="wait">
+                  {activeSection === 'personal' && (
+                    <motion.div
+                      key="personal"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                    >
+                      <div className="space-y-6">
+                        {/* Profile Image */}
+                        <div className="flex items-center gap-6">
+                          <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100">
+                            {kycData.personalDetails.employeeImage ? (
+                              <Image
+                                src={kycData.personalDetails.employeeImage}
+                                alt="Profile"
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <FaUser className="w-full h-full p-4 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Employee ID */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Employee ID
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.employeeId}
+                              disabled
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                            />
+                          </div>
+
+                          {/* Project Name */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Project Name
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.projectName}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    projectName: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Full Name */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Full Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.fullName}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    fullName: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Father's Name */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Father's Name
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.fathersName}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    fathersName: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Mother's Name */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Mother's Name
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.mothersName}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    mothersName: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Gender */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Gender *
+                            </label>
+                            <select
+                              value={kycData.personalDetails.gender}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    gender: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">Select Gender</option>
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+
+                          {/* Date of Birth */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Date of Birth *
+                            </label>
+                            <input
+                              type="date"
+                              value={kycData.personalDetails.dob}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    dob: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Phone Number */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Phone Number *
+                            </label>
+                            <input
+                              type="tel"
+                              value={kycData.personalDetails.phoneNumber}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    phoneNumber: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Email */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Email *
+                            </label>
+                            <input
+                              type="email"
+                              value={kycData.personalDetails.email}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    email: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Designation */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Designation *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.designation}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    designation: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Date of Joining */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Date of Joining
+                            </label>
+                            <input
+                              type="date"
+                              value={kycData.personalDetails.dateOfJoining}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    dateOfJoining: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Additional Fields */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Nationality
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.nationality}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    nationality: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Religion */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Religion
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.religion}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    religion: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Marital Status */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Marital Status
+                            </label>
+                            <select
+                              value={kycData.personalDetails.maritalStatus}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    maritalStatus: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">Select Status</option>
+                              <option value="Single">Single</option>
+                              <option value="Married">Married</option>
+                              <option value="Divorced">Divorced</option>
+                              <option value="Widowed">Widowed</option>
+                            </select>
+                          </div>
+
+                          {/* Blood Group */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Blood Group
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.bloodGroup}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    bloodGroup: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Work Type */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Work Type
+                            </label>
+                            <select
+                              value={kycData.personalDetails.workType}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    workType: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">Select Work Type</option>
+                              <option value="office">Office</option>
+                              <option value="remote">Remote</option>
+                              <option value="hybrid">Hybrid</option>
+                            </select>
+                          </div>
+
+                          {/* Experience */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Experience
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.experience}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    experience: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Educational Qualification */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Educational Qualification
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.personalDetails.educationalQualification}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  personalDetails: {
+                                    ...kycData.personalDetails,
+                                    educationalQualification: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Languages */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Languages
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {kycData.personalDetails.languages.map((lang, index) => (
+                              <span
+                                key={index}
+                                className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm"
+                              >
+                                {lang}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeSection === 'address' && (
+                    <motion.div
+                      key="address"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="space-y-6"
+                    >
+                      {/* Address Information Section */}
+                      {/* ... existing address fields ... */}
+                    </motion.div>
+                  )}
+
+                  {/* Add similar motion.div wrappers for other sections */}
+                </AnimatePresence>
+
+                {/* Navigation and Submit */}
+                <div className="flex items-center justify-between pt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentIndex = sections.findIndex(s => s.id === activeSection);
+                      if (currentIndex > 0) {
+                        setActiveSection(sections[currentIndex - 1].id);
+                      }
+                    }}
+                    className="px-6 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                    disabled={activeSection === sections[0].id}
+                  >
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-4">
+                    {activeSection !== sections[sections.length - 1].id ? (
+                      <button
+                        type="button"
+                        onClick={handleNextSection}
+                        className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                      >
+                        Next
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        className={`px-8 py-3 rounded-xl text-white font-medium transition-all ${
+                          saving
+                            ? 'bg-blue-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                      >
+                        {saving ? (
+                          <span className="flex items-center gap-2">
+                            <FaSpinner className="animate-spin" />
+                            Saving Changes...
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <FaSave />
+                            Save Changes
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </form>
+
+              {/* Messages */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex items-center gap-3 text-red-600 bg-red-50 p-4 rounded-xl"
+                  >
+                    <FaExclamationCircle className="w-5 h-5 flex-shrink-0" />
+                    <p className="text-sm font-medium">{error}</p>
+                  </motion.div>
+                )}
+
+                {success && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex items-center gap-3 text-green-600 bg-green-50 p-4 rounded-xl"
+                  >
+                    <FaCheckCircle className="w-5 h-5 flex-shrink-0" />
+                    <p className="text-sm font-medium">{success}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Identity Information */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-          <FaIdCard className="text-blue-600" />
-          Identity Information
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Aadhar Number
-            </label>
-            <input
-              type="text"
-              value={kycData.identityInfo.aadharNumber}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                identityInfo: { ...kycData.identityInfo, aadharNumber: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              PAN Number
-            </label>
-            <input
-              type="text"
-              value={kycData.identityInfo.panNumber}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                identityInfo: { ...kycData.identityInfo, panNumber: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Passport Number (Optional)
-            </label>
-            <input
-              type="text"
-              value={kycData.identityInfo.passportNumber}
-              onChange={(e) => setKYCData({
-                ...kycData,
-                identityInfo: { ...kycData.identityInfo, passportNumber: e.target.value }
-              })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Error and Success Messages */}
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-lg">
-          <FaExclamationCircle className="w-5 h-5 flex-shrink-0" />
-          <p>{error}</p>
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-4 rounded-lg">
-          <FaCheckCircle className="w-5 h-5 flex-shrink-0" />
-          <p>{success}</p>
-        </div>
-      )}
-
-      {/* Submit Button */}
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={saving}
-          className={`px-6 py-3 rounded-lg text-white font-medium transition-all ${
-            saving
-              ? 'bg-blue-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {saving ? (
-            <span className="flex items-center gap-2">
-              <FaSpinner className="animate-spin" />
-              Saving...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <FaSave />
-              Save Changes
-            </span>
-          )}
-        </button>
-      </div>
-    </form>
+    </div>
   );
 } 
