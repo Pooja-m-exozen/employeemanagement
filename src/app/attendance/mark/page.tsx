@@ -331,176 +331,179 @@ function MarkAttendanceContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      {/* Page Header */}
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">Mark Attendance</h1>
-          <p className="mt-2 text-lg text-gray-600">Complete your daily attendance verification</p>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl shadow-xl p-8 mb-8 text-white">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl">
+              <FaUserCheck className="text-3xl text-white" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold">Mark Attendance</h2>
+              <p className="text-blue-100 mt-1">Welcome to the official attendance management system</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 bg-white/10 backdrop-blur-md px-6 py-4 rounded-xl">
+            <div className="flex items-center gap-3">
+              <FaClock className="text-2xl text-blue-200" />
+              <div>
+                <p className="text-2xl font-bold">{currentTime}</p>
+                <p className="text-sm text-blue-200">Current Time</p>
+              </div>
+            </div>
+            <div className="w-px h-12 bg-white/20"></div>
+            <div className="flex items-center gap-3">
+              <FaCalendarAlt className="text-2xl text-blue-200" />
+              <div>
+                <p className="font-medium">{currentDate}</p>
+                <p className="text-sm text-blue-200">Today's Date</p>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Progress Steps */}
-        <div className="max-w-3xl mx-auto mb-12">
-          <div className="flex justify-between items-center">
-            <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                !photoPreview ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'
-              }`}>
-                <FaCamera className="w-5 h-5" />
+      {/* Instructions Card */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <FaInfoCircle className="text-2xl text-blue-600" />
+          <h3 className="text-xl font-bold text-gray-800">Important Instructions</h3>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="p-4 bg-blue-50 rounded-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="font-bold text-blue-600">1</span>
               </div>
-              <p className="mt-2 text-sm font-medium text-gray-700">Photo Capture</p>
+              <h4 className="font-semibold text-gray-800">Enable Permissions</h4>
             </div>
-            <div className="flex-1 h-1 mx-4 bg-gray-200">
-              <div className={`h-full ${photoPreview ? 'bg-green-500' : 'bg-gray-200'}`} />
-            </div>
-            <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                markAttendanceSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 text-white'
-              }`}>
-                <FaUserCheck className="w-5 h-5" />
+            <p className="text-gray-600 text-sm">Allow camera and location access when prompted for accurate attendance marking.</p>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="font-bold text-blue-600">2</span>
               </div>
-              <p className="mt-2 text-sm font-medium text-gray-700">Verification</p>
+              <h4 className="font-semibold text-gray-800">Take Clear Photo</h4>
+            </div>
+            <p className="text-gray-600 text-sm">Ensure good lighting and face the camera directly for a clear identification photo.</p>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="font-bold text-blue-600">3</span>
+              </div>
+              <h4 className="font-semibold text-gray-800">Verify & Submit</h4>
+            </div>
+            <p className="text-gray-600 text-sm">Review your photo and confirm your location before marking attendance.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Photo Section */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <FaCamera className="text-blue-600" />
+            Photo Verification
+          </h3>
+          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-8 border-2 border-dashed border-blue-200">
+            <div className="flex flex-col items-center justify-center">
+              {photoPreview ? (
+                <div className="relative group">
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    className="w-full h-[400px] object-cover rounded-lg shadow-lg"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                    <button
+                      onClick={() => setPhotoPreview(null)}
+                      className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600 transition-colors shadow-lg transform hover:scale-110"
+                      title="Retake photo"
+                    >
+                      <FaStopCircle className="w-6 h-6" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-blue-200 rounded-full blur-xl opacity-20"></div>
+                    <div className="relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-full p-8 inline-block shadow-xl">
+                      <FaCamera className="h-16 w-16 text-white" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-3">Ready to Capture</h3>
+                  <p className="text-gray-600 mb-8">
+                    Please ensure you're in a well-lit area and facing the camera directly
+                  </p>
+                  <button
+                    onClick={() => setShowCameraModal(true)}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  >
+                    <FaCamera className="w-5 h-5" />
+                    <span>Start Camera</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
-            <div className="p-8">
-              {/* Time and Date Display */}
-              <div className="flex justify-center mb-8">
-                <div className="bg-gray-50 rounded-xl p-4 inline-flex items-center space-x-8">
-                  <div className="flex items-center space-x-3">
-                    <FaClock className="text-blue-600 w-6 h-6" />
-                    <div>
-                      <p className="text-sm text-gray-500">Current Time</p>
-                      <p className="text-lg font-semibold text-gray-900">{currentTime}</p>
-                    </div>
-                  </div>
-                  <div className="w-px h-12 bg-gray-200" />
-                  <div className="flex items-center space-x-3">
-                    <FaCalendarAlt className="text-blue-600 w-6 h-6" />
-                    <div>
-                      <p className="text-sm text-gray-500">Today's Date</p>
-                      <p className="text-lg font-semibold text-gray-900">{currentDate}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Photo Preview Section */}
-              <div className="mb-8">
-                <div className="max-w-2xl mx-auto">
-                  {photoPreview ? (
-                    <div className="relative rounded-2xl overflow-hidden shadow-lg">
-                      <img
-                        src={photoPreview}
-                        alt="Preview"
-                        className="w-full h-[400px] object-cover"
-                      />
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                        <div className="flex justify-between items-center">
-                          <p className="text-white font-medium">Photo Captured Successfully</p>
-                          <button
-                            onClick={() => setPhotoPreview(null)}
-                            className="bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors"
-                          >
-                            Retake Photo
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-gray-50 rounded-2xl p-8 text-center border-2 border-dashed border-gray-300">
-                      <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                        <FaCamera className="w-12 h-12 text-blue-600" />
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Capture</h3>
-                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                        Please ensure you're in a well-lit area and your face is clearly visible
-                      </p>
-                      <button
-                        onClick={() => setShowCameraModal(true)}
-                        className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-                      >
-                        <FaCamera className="w-5 h-5 mr-2" />
-                        Start Camera
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Status Messages */}
-              <div className="max-w-2xl mx-auto space-y-4 mb-8">
-                {locationError && <FeedbackMessage message={locationError} type="error" />}
-                {markAttendanceError && <FeedbackMessage message={markAttendanceError} type="error" />}
-                {markAttendanceSuccess && <FeedbackMessage message={markAttendanceSuccess} type="success" />}
-              </div>
-
-              {/* Action Button */}
-              <div className="max-w-md mx-auto">
-                <button
-                  onClick={handleMarkAttendance}
-                  disabled={markingAttendance || !photoPreview}
-                  className={`w-full flex items-center justify-center px-6 py-4 rounded-lg text-base font-medium transition-all duration-200 ${
-                    markingAttendance || !photoPreview
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  {markingAttendance ? (
-                    <>
-                      <FaSpinner className="animate-spin w-5 h-5 mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <FaUserCheck className="w-5 h-5 mr-2" />
-                      Mark Attendance
-                    </>
-                  )}
-                </button>
-              </div>
+        {/* Status and Action Section */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <FaMapMarkerAlt className="text-blue-600" />
+            Location Verification
+          </h3>
+          
+          <div className="space-y-6">
+            <div className="p-4 bg-gray-50 rounded-xl">
+              <p className="text-gray-600 mb-2">
+                <FaInfoCircle className="inline mr-2 text-blue-600" />
+                Your current location will be verified against your registered office location
+              </p>
+              <p className="text-sm text-gray-500">
+                Please ensure your device's location services are enabled
+              </p>
             </div>
-          </div>
 
-          {/* Instructions Panel */}
-          <div className="mt-8 bg-white shadow-lg rounded-xl p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <FaInfoCircle className="w-5 h-5 text-blue-600 mr-2" />
-              Important Instructions
-            </h3>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="font-semibold text-blue-600">1</span>
-                  </div>
-                  <h4 className="font-medium text-gray-900">Enable Permissions</h4>
-                </div>
-                <p className="text-sm text-gray-600">Allow camera and location access when prompted.</p>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="font-semibold text-blue-600">2</span>
-                  </div>
-                  <h4 className="font-medium text-gray-900">Clear Photo</h4>
-                </div>
-                <p className="text-sm text-gray-600">Ensure good lighting and face the camera directly.</p>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="font-semibold text-blue-600">3</span>
-                  </div>
-                  <h4 className="font-medium text-gray-900">Verify & Submit</h4>
-                </div>
-                <p className="text-sm text-gray-600">Review your photo before marking attendance.</p>
-              </div>
+            <div className="space-y-4">
+              {locationError && (
+                <FeedbackMessage message={locationError} type="error" />
+              )}
+              {markAttendanceError && (
+                <FeedbackMessage message={markAttendanceError} type="error" />
+              )}
+              {markAttendanceSuccess && (
+                <FeedbackMessage message={markAttendanceSuccess} type="success" />
+              )}
             </div>
+
+            <button
+              onClick={handleMarkAttendance}
+              disabled={markingAttendance || !photoPreview}
+              className={`w-full flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-medium transition-all duration-200 shadow-lg ${
+                markingAttendance || !photoPreview
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:shadow-xl transform hover:scale-105'
+              }`}
+            >
+              {markingAttendance ? (
+                <>
+                  <FaSpinner className="animate-spin w-5 h-5" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <FaUserCheck className="w-5 h-5" />
+                  <span>Mark Attendance</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
