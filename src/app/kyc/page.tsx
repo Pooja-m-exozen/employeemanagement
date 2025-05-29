@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { FaSpinner, FaSearch, FaEye, FaTimes, FaFilter, FaEdit, FaFileAlt, FaUser, FaEnvelope, FaPhone, FaIdCard, FaMapMarkerAlt, FaTimesCircle, FaExclamationCircle,FaUniversity, FaCheckCircle, FaHome, FaUserCircle, FaBuilding, FaAddressCard, FaQuestionCircle, FaInfoCircle, FaLightbulb, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
-import { isAuthenticated, isEmployee, getUserRole } from '@/services/auth';
+import { isAuthenticated, isEmployee, getUserRole, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
@@ -85,6 +85,7 @@ function classNames(...classes: string[]) {
 
 export default function ViewKYC() {
   const router = useRouter();
+  const employeeId = getEmployeeId();
   const [kycResponse, setKYCResponse] = useState<KYCResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +112,10 @@ export default function ViewKYC() {
 
   const fetchKYCData = async () => {
     try {
-      const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295');
+      if (!employeeId) {
+        throw new Error('Employee ID not found');
+      }
+      const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KYC data');
       }
