@@ -1,7 +1,7 @@
 import React, { ReactNode, useState, useEffect } from 'react';
 import type { JSX } from 'react';
 import Image from 'next/image';
-import { FaUserFriends, FaBuilding, FaFileAlt, FaTachometerAlt, FaSignOutAlt, FaChevronRight, FaPlus, FaChevronLeft, FaMinus, FaUser, FaCalendarAlt, FaMoneyBillWave, FaTasks, FaReceipt, FaHeadset, FaFileContract, FaDoorOpen, FaBell, FaSearch, FaIdCard, FaEnvelope, FaTimes, FaBars, FaCog } from 'react-icons/fa';
+import { FaUserFriends, FaBuilding, FaFileAlt, FaTachometerAlt, FaSignOutAlt, FaChevronRight, FaPlus, FaChevronLeft, FaMinus, FaUser, FaCalendarAlt, FaMoneyBillWave, FaTasks, FaReceipt, FaHeadset, FaFileContract, FaDoorOpen, FaBell, FaSearch, FaIdCard, FaEnvelope, FaTimes, FaBars, FaCog, FaEdit, FaUserCheck, FaCalendarCheck, FaClipboardCheck, FaHistory } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { logout, isAuthenticated, getUserRole } from '@/services/auth';
@@ -26,7 +26,7 @@ interface UserDetails {
   designation: string;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
   const router = useRouter();
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -117,7 +117,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const getMenuItemsByRole = (): MenuItem[] => {
     const role = getUserRole();
     
-    // Return employee menu items for both Admin and Employee roles
     return [
       {
         icon: <FaTachometerAlt />,
@@ -126,18 +125,66 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       },
       {
         icon: <FaUser />,
-        label: 'Know Me',
-        href: '/kyc'
+        label: 'KYC',
+        subItems: [
+          {
+            icon: <FaIdCard />,
+            label: 'View KYC',
+            href: '/kyc'
+          },
+          {
+            icon: <FaFileAlt />,
+            label: 'Upload Documents',
+            href: '/kyc/upload'
+          },
+          {
+            icon: <FaEdit />,
+            label: 'Edit KYC',
+            href: '/kyc/edit'
+          }
+        ]
       },
       {
         icon: <FaCalendarAlt />,
         label: 'Attendance',
-        href: '/attendance'
+        subItems: [
+          {
+            icon: <FaUserCheck />,
+            label: 'Mark Attendance',
+            href: '/attendance/mark'
+          },
+          {
+            icon: <FaCalendarCheck />,
+            label: 'View Attendance',
+            href: '/attendance/view'
+          },
+          {
+            icon: <FaClipboardCheck />,
+            label: 'Regularization',
+            href: '/attendance/regularization'
+          }
+        ]
       },
       {
         icon: <FaFileAlt />,
         label: 'Leave Management',
-        href: '/leave-management'
+        subItems: [
+          {
+            icon: <FaPlus />,
+            label: 'Request Leave',
+            href: '/leave-management/request'
+          },
+          {
+            icon: <FaHistory />,
+            label: 'Leave History',
+            href: '/leave-management/history'
+          },
+          {
+            icon: <FaCalendarCheck />,
+            label: 'View Leave',
+            href: '/leave-management/view'
+          }
+        ]
       },
       {
         icon: <FaMoneyBillWave />,
@@ -149,32 +196,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         label: 'Reports',
         href: '/reports'
       },
-      // {
-      //   icon: <FaReceipt />,
-      //   label: 'Expense Reimbursement',
-      //   href: '/expense'
-      // },
-      // {
-      //   icon: <FaHeadset />,
-      //   label: 'Helpdesk',
-      //   href: '/helpdesk'
-      // },
-      // {
-      //   icon: <FaFileContract />,
-      //   label: 'Policy and Document',
-      //   href: '/policy'
-      // },
-      // {
-      //   icon: <FaDoorOpen />,
-      //   label: 'Resignation',
-      //   href: '/resignation'
-      // }
+      {
+        icon: <FaHeadset />,
+        label: 'Helpdesk',
+        href: '/helpdesk'
+      }
     ];
   };
 
   const menuItems: MenuItem[] = getMenuItemsByRole();
 
-  const renderMenuItem = (item: MenuItem) => {
+  const renderMenuItem = (item: MenuItem): JSX.Element => {
     const isExpanded = expandedMenus.includes(item.label);
     const isActive = pathname === item.href;
     
@@ -196,15 +228,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               </div>
               {isSidebarExpanded && (
                 <span className="ml-2 flex-shrink-0">
-                  {isExpanded ? (
-                    <FaMinus className="w-4 h-4 text-blue-700" />
-                  ) : (
-                    <FaPlus className="w-4 h-4 text-gray-500" />
-                  )}
+                  <FaChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'transform rotate-90 text-blue-700' : 'text-gray-500'}`} />
                 </span>
               )}
             </button>
-            {expandedMenus.includes(item.label) && isSidebarExpanded && (
+            {expandedMenus.includes(item.label) && isSidebarExpanded && item.subItems && (
               <ul className="pl-6 space-y-1 animate-fadeIn">
                 {item.subItems.map(subItem => (
                   <li key={subItem.label}>
