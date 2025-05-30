@@ -245,51 +245,56 @@ function LeaveHistoryContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-blue-600 rounded-xl">
-            <FaHistory className="w-6 h-6 text-white" />
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-xl shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+              <FaHistory className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">Leave History</h1>
+              <p className="text-blue-100 mt-1">View and track your leave applications</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Leave History</h1>
-            <p className="text-gray-600">View and track your leave requests</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="p-2.5 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors rounded-lg"
+              title="Toggle Filters"
+            >
+              <FaFilter className="w-5 h-5" />
+            </button>
+            <button
+              onClick={fetchLeaveHistory}
+              className="p-2.5 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors rounded-lg"
+              title="Refresh"
+            >
+              <FaSync className="w-5 h-5" />
+            </button>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="p-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-50"
-            title="Toggle Filters"
-          >
-            <FaFilter className="w-5 h-5" />
-          </button>
-          <button
-            onClick={fetchLeaveHistory}
-            className="p-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-50"
-            title="Refresh"
-          >
-            <FaSync className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
       {/* Filters Section */}
       {showFilters && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
+            <div className="flex items-center gap-2">
+              <FaFilter className="text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
+            </div>
             <button
               onClick={clearFilters}
-              className="text-sm text-blue-600 hover:text-blue-700"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               Clear all filters
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
               <div className="relative">
                 <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
@@ -297,17 +302,17 @@ function LeaveHistoryContent() {
                   placeholder="Search records..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <div className="relative">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full appearance-none bg-white pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -318,12 +323,12 @@ function LeaveHistoryContent() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time Period</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
               <div className="relative">
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full appearance-none bg-white pl-4 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Time</option>
                   <option value="last30">Last 30 Days</option>
@@ -338,12 +343,14 @@ function LeaveHistoryContent() {
       )}
 
       {/* History Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FaHistory className="text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-800">Leave History</h2>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <FaHistory className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-800">Leave Applications</h2>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">
@@ -360,7 +367,7 @@ function LeaveHistoryContent() {
             <FeedbackMessage message={error} type="error" />
             <button
               onClick={fetchLeaveHistory}
-              className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-2"
+              className="mt-4 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-2"
             >
               <FaSync className="w-4 h-4" />
               Try Again
@@ -368,9 +375,11 @@ function LeaveHistoryContent() {
           </div>
         ) : filteredHistory.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            <FaHistory className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-lg font-medium">No leave history found</p>
-            <p className="text-sm mt-1">
+            <div className="p-3 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <FaHistory className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-lg font-medium text-gray-800">No leave history found</p>
+            <p className="text-sm mt-1 text-gray-500">
               {searchQuery || statusFilter !== 'all' || dateFilter !== 'all'
                 ? 'Try adjusting your search filters'
                 : 'Submit a new leave request to see it here'}
@@ -378,7 +387,7 @@ function LeaveHistoryContent() {
             {(searchQuery || statusFilter !== 'all' || dateFilter !== 'all') && (
               <button
                 onClick={clearFilters}
-                className="mt-4 text-blue-600 hover:text-blue-700 text-sm"
+                className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium"
               >
                 Clear filters
               </button>

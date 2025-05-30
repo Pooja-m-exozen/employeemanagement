@@ -314,6 +314,8 @@ export default function EditKYC() {
           kycData.emergencyContact.phone &&
           kycData.emergencyContact.relationship
         );
+      case 'documents':
+        return kycData.documents.length > 0;
       default:
         return true;
     }
@@ -934,14 +936,527 @@ export default function EditKYC() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="space-y-6"
+                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
                     >
-                      {/* Address Information Section */}
-                      {/* ... existing address fields ... */}
+                      {/* Permanent Address */}
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <FaMapMarkerAlt className="text-blue-600" />
+                          Permanent Address
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Street *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.permanentAddress.street}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    permanentAddress: {
+                                      ...kycData.addressDetails.permanentAddress,
+                                      street: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              City *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.permanentAddress.city}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    permanentAddress: {
+                                      ...kycData.addressDetails.permanentAddress,
+                                      city: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              State *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.permanentAddress.state}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    permanentAddress: {
+                                      ...kycData.addressDetails.permanentAddress,
+                                      state: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Postal Code *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.permanentAddress.postalCode}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    permanentAddress: {
+                                      ...kycData.addressDetails.permanentAddress,
+                                      postalCode: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Current Address */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <FaMapMarkerAlt className="text-blue-600" />
+                          Current Address
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Street *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.currentAddress.street}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    currentAddress: {
+                                      ...kycData.addressDetails.currentAddress,
+                                      street: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              City *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.currentAddress.city}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    currentAddress: {
+                                      ...kycData.addressDetails.currentAddress,
+                                      city: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              State *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.currentAddress.state}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    currentAddress: {
+                                      ...kycData.addressDetails.currentAddress,
+                                      state: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Postal Code *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.addressDetails.currentAddress.postalCode}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  addressDetails: {
+                                    ...kycData.addressDetails,
+                                    currentAddress: {
+                                      ...kycData.addressDetails.currentAddress,
+                                      postalCode: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
 
-                  {/* Add similar motion.div wrappers for other sections */}
+                  {activeSection === 'bank' && (
+                    <motion.div
+                      key="bank"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                    >
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <FaMoneyCheckAlt className="text-blue-600" />
+                          Bank Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Bank Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.bankDetails.bankName}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  bankDetails: {
+                                    ...kycData.bankDetails,
+                                    bankName: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Branch Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.bankDetails.branchName}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  bankDetails: {
+                                    ...kycData.bankDetails,
+                                    branchName: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Account Number *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.bankDetails.accountNumber}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  bankDetails: {
+                                    ...kycData.bankDetails,
+                                    accountNumber: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              IFSC Code *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.bankDetails.ifscCode}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  bankDetails: {
+                                    ...kycData.bankDetails,
+                                    ifscCode: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeSection === 'emergency' && (
+                    <motion.div
+                      key="emergency"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                    >
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <FaPhoneVolume className="text-blue-600" />
+                          Emergency Contact
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Contact Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.emergencyContact.name}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  emergencyContact: {
+                                    ...kycData.emergencyContact,
+                                    name: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Phone Number *
+                            </label>
+                            <input
+                              type="tel"
+                              value={kycData.emergencyContact.phone}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  emergencyContact: {
+                                    ...kycData.emergencyContact,
+                                    phone: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Relationship *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.emergencyContact.relationship}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  emergencyContact: {
+                                    ...kycData.emergencyContact,
+                                    relationship: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Aadhar Number
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.emergencyContact.aadhar}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  emergencyContact: {
+                                    ...kycData.emergencyContact,
+                                    aadhar: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeSection === 'documents' && (
+                    <motion.div
+                      key="documents"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                    >
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <FaIdCard className="text-blue-600" />
+                          Documents
+                        </h3>
+
+                        {/* Identification Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              ID Type *
+                            </label>
+                            <select
+                              value={kycData.identificationDetails.identificationType}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  identificationDetails: {
+                                    ...kycData.identificationDetails,
+                                    identificationType: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">Select ID Type</option>
+                              <option value="Aadhar">Aadhar</option>
+                              <option value="PAN">PAN</option>
+                              <option value="Passport">Passport</option>
+                              <option value="Driving License">Driving License</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              ID Number *
+                            </label>
+                            <input
+                              type="text"
+                              value={kycData.identificationDetails.identificationNumber}
+                              onChange={(e) =>
+                                setKYCData({
+                                  ...kycData,
+                                  identificationDetails: {
+                                    ...kycData.identificationDetails,
+                                    identificationNumber: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Uploaded Documents List */}
+                        <div className="mt-6">
+                          <h4 className="text-sm font-medium text-gray-700 mb-4">Uploaded Documents</h4>
+                          {kycData.documents.length > 0 ? (
+                            <div className="space-y-4">
+                              {kycData.documents.map((doc, index) => (
+                                <div
+                                  key={doc._id}
+                                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <FaIdCard className="text-blue-600" />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {doc.type}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Uploaded on{' '}
+                                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <a
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                  >
+                                    View
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">No documents uploaded yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </AnimatePresence>
 
                 {/* Navigation and Submit */}
