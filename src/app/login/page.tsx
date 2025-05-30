@@ -19,7 +19,7 @@ const shapeProps = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +27,7 @@ export default function LoginPage() {
   const [activeField, setActiveField] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [fieldErrors, setFieldErrors] = useState({
-    username: '',
+    email: '',
     password: ''
   });
 
@@ -62,15 +62,15 @@ export default function LoginPage() {
 
   const validateFields = () => {
     const errors = {
-      username: '',
+      email: '',
       password: ''
     };
 
-    // Username validation
-    if (!username.trim()) {
-      errors.username = 'Username is required';
-    } else if (username.length < 3) {
-      errors.username = 'Username must be at least 3 characters';
+    // Email validation
+    if (!email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Please enter a valid email address';
     }
 
     // Password validation
@@ -81,12 +81,12 @@ export default function LoginPage() {
     }
 
     setFieldErrors(errors);
-    return !errors.username && !errors.password;
+    return !errors.email && !errors.password;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFieldErrors({ username: '', password: '' });
+    setFieldErrors({ email: '', password: '' });
 
     // Validate fields before proceeding
     if (!validateFields()) {
@@ -105,7 +105,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await login(username, password);
+      const response = await login(email, password);
 
       if (response.success) {
         toast.success('Login successful! Redirecting...', {
@@ -302,39 +302,39 @@ export default function LoginPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.4 }}
               >
-                <label htmlFor="username" className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'} mb-1`}>
-                  Username
+                <label htmlFor="email" className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'} mb-1`}>
+                  Email
                 </label>
                 <div className="relative group">
-                  <span className={`absolute inset-y-0 left-0 pl-3 flex items-center transition-colors ${activeField === 'username' ? 'text-blue-600' : theme === 'dark' ? 'text-gray-400' : 'text-gray-400'}`}>
+                  <span className={`absolute inset-y-0 left-0 pl-3 flex items-center transition-colors ${activeField === 'email' ? 'text-blue-600' : theme === 'dark' ? 'text-gray-400' : 'text-gray-400'}`}>
                     <FaUser className="w-4 h-4" />
                   </span>
                   <input
-                    id="username"
-                    type="text"
-                    value={username}
+                    id="email"
+                    type="email"
+                    value={email}
                     onChange={(e) => {
-                      setUsername(e.target.value);
-                      setFieldErrors(prev => ({ ...prev, username: '' }));
+                      setEmail(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, email: '' }));
                     }}
-                    onFocus={() => setActiveField('username')}
+                    onFocus={() => setActiveField('email')}
                     onBlur={() => setActiveField(null)}
                     required
-                    className={`block w-full pl-10 pr-3 py-3.5 border ${fieldErrors.username ? 'border-red-500' : activeField === 'username' ? 'border-blue-500' : theme === 'dark' ? 'border-gray-600' : 'border-gray-300'} 
+                    className={`block w-full pl-10 pr-3 py-3.5 border ${fieldErrors.email ? 'border-red-500' : activeField === 'email' ? 'border-blue-500' : theme === 'dark' ? 'border-gray-600' : 'border-gray-300'} 
                     rounded-lg ${theme === 'dark' ? 'bg-gray-700 text-white placeholder:text-gray-400' : 'text-gray-900 placeholder:text-gray-400'} 
                     focus:ring-2 ${theme === 'dark' ? 'focus:ring-blue-900 focus:border-blue-500' : 'focus:ring-blue-100 focus:border-blue-600'} 
                     ${theme === 'dark' ? 'hover:border-blue-500' : 'hover:border-blue-400'} transition-all duration-200 shadow-sm`}
-                    placeholder="Enter your username"
+                    placeholder="Enter your email"
                   />
                   <AnimatePresence>
-                    {fieldErrors.username && (
+                    {fieldErrors.email && (
                       <motion.p 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className="mt-1.5 text-sm text-red-600 flex items-center"
                       >
-                        {fieldErrors.username}
+                        {fieldErrors.email}
                       </motion.p>
                     )}
                   </AnimatePresence>

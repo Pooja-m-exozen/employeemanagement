@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
 import React, { ReactNode, useState, useEffect } from 'react';
 import type { JSX } from 'react';
 import Image from 'next/image';
-import { FaUserFriends, FaBuilding, FaFileAlt, FaTachometerAlt, FaSignOutAlt, FaChevronRight, FaPlus, FaChevronLeft, FaMinus, FaUser, FaCalendarAlt, FaMoneyBillWave, FaTasks, FaReceipt, FaHeadset, FaFileContract, FaDoorOpen, FaBell, FaSearch, FaIdCard, FaEnvelope, FaTimes, FaBars, FaEdit, FaUserCheck, FaCalendarCheck, FaClipboardCheck, FaHistory } from 'react-icons/fa';
+import { FaUserFriends, FaBuilding, FaFileAlt, FaTachometerAlt, FaSignOutAlt, FaChevronRight, FaPlus, FaChevronLeft, FaMinus, FaUser, FaCalendarAlt, FaMoneyBillWave, FaTasks, FaReceipt, FaHeadset, FaFileContract, FaDoorOpen, FaBell, FaSearch, FaIdCard, FaEnvelope, FaTimes, FaBars, FaCog, FaEdit, FaUserCheck, FaCalendarCheck, FaClipboardCheck, FaHistory } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { logout, isAuthenticated, getUserRole } from '@/services/auth';
+import { logout, isAuthenticated, getUserRole, getEmployeeId } from '@/services/auth';
+import { UserContext } from '@/context/UserContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -27,7 +28,7 @@ interface UserDetails {
   designation: string;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
   const router = useRouter();
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -57,7 +58,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295');
+        const employeeId = getEmployeeId();
+        if (!employeeId) {
+          console.error('No employee ID found');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}`);
         const data = await response.json();
         if (data.kycData) {
           setUserDetails({
@@ -179,30 +187,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {
         icon: <FaTasks />,
         label: 'Reports',
-        subItems: [
-          {
-            icon: <FaCalendarAlt />,
-            label: 'Attendance Report',
-            href: '/reports/Attendance'
-          },
-          {
-            icon: <FaFileAlt />,
-            label: 'Leave Report',
-            href: '/reports/leave'
-          }
-        ]
+        href: '/reports'
       },
       {
         icon: <FaHeadset />,
         label: 'Helpdesk',
         href: '/helpdesk'
-      },
+      }
     ];
   };
 
   const menuItems: MenuItem[] = getMenuItemsByRole();
 
-  const renderMenuItem = (item: MenuItem) => {
+  const renderMenuItem = (item: MenuItem): JSX.Element => {
     const isExpanded = expandedMenus.includes(item.label);
     const isActive = pathname === item.href;
     const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -233,44 +230,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 )}
               </div>
               {isSidebarExpanded && (
-                <span className={`ml-2 flex-shrink-0 transition-transform duration-300 ${
-                  isExpanded ? 'rotate-90' : ''
-                }`}>
-                  <FaChevronRight className="w-4 h-4" />
+                <span className="ml-2 flex-shrink-0">
+                  <FaChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'transform rotate-90 text-blue-700' : 'text-gray-500'}`} />
                 </span>
               )}
             </button>
-            {isExpanded && isSidebarExpanded && (
-              <ul className="pl-4 space-y-1 animate-fadeIn">
-                {item.subItems?.map(subItem => {
-                  const isSubItemActive = pathname === subItem.href;
-                  return (
-                    <li key={subItem.label}>
-                      <button
-                        onClick={() => {
-                          if (subItem.href) {
-                            handleMenuClick(subItem.href);
-                          }
-                          setMobileMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-300 ease-in-out
-                          ${isSubItemActive 
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
-                            : 'text-gray-500 hover:bg-blue-50/50 hover:text-blue-600'
-                          }
-                          group relative overflow-hidden
-                        `}
-                      >
-                        <span className={`text-sm w-8 transition-all duration-300 transform group-hover:scale-110 ${
-                          isSubItemActive ? 'text-white' : 'text-gray-400'
-                        }`}>
-                          {subItem.icon}
-                        </span>
-                        <span className="font-medium text-sm truncate ml-3">{subItem.label}</span>
-                      </button>
-                    </li>
-                  );
-                })}
+            {expandedMenus.includes(item.label) && isSidebarExpanded && item.subItems && (
+              <ul className="pl-6 space-y-1 animate-fadeIn">
+                {item.subItems.map(subItem => (
+                  <li key={subItem.label}>
+                    <Link
+                      href={subItem.href || '#'}
+                      className="w-full flex items-center px-4 py-2.5 text-sm text-gray-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                    >
+                      <span className="text-sm w-8">{subItem.icon}</span>
+                      <span className="font-medium truncate">{subItem.label}</span>
+                    </Link>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -302,6 +279,52 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         )}
       </li>
     );
+  };
+
+  const handleProfileImageClick = () => {
+    setShowProfileDropdown((prev) => !prev);
+  };
+
+  const handleEditProfile = () => {
+    setShowProfileDropdown(false);
+    setShowEditProfileModal(true);
+  };
+
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
+    }
+  };
+
+  const handleProfileImageUpload = async () => {
+    if (!selectedImage) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('No employee ID found');
+      }
+
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      const imageUrl = URL.createObjectURL(selectedImage);
+
+      const res = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeImage: imageUrl }),
+      });
+      if (!res.ok) throw new Error('Failed to update profile image');
+      
+      setUserDetails((prev) => prev ? { ...prev, employeeImage: imageUrl } : prev);
+      setShowEditProfileModal(false);
+      setSelectedImage(null);
+    } catch (err: any) {
+      setUploadError(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
