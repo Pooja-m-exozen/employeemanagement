@@ -27,25 +27,34 @@ const handleResponse = async (response: Response) => {
   return response.json();
 };
 
-export const getDashboardData = async (
-  employeeId: string,
-  month?: number,
-  year?: number
-): Promise<{
+export const getDashboardData = async (): Promise<{
   birthdays: BirthdayResponse;
   anniversaries: WorkAnniversaryResponse;
-  leaveBalance: LeaveBalanceResponse;
-  attendanceActivities: any[];
-  monthlyStats: MonthlyStats;
 }> => {
   try {
-    const response = await fetch(`/api/dashboard?employeeId=${employeeId}&month=${month}&year=${year}`);
-    return await handleResponse(response);
+    // Fetch both birthday and anniversary data in parallel
+    const [birthdayRes, anniversaryRes] = await Promise.all([
+      fetch(`${BASE_URL}/kyc/birthdays/today`),
+      fetch(`${BASE_URL}/kyc/work-anniversaries/today`)
+    ]);
+
+    // Handle responses
+    const birthdays = await handleResponse(birthdayRes);
+    const anniversaries = await handleResponse(anniversaryRes);
+
+    // Return both in a single object
+    return {
+      birthdays,
+      anniversaries
+    };
+
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
     throw error;
   }
 };
+
+
 
 export const getMonthlyStats = async (
   employeeId: string,

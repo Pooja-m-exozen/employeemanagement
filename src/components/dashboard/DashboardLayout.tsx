@@ -36,6 +36,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentDateTime, setCurrentDateTime] = useState<string>("");
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -86,6 +92,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
     fetchUserDetails();
   }, []);
 
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      const options: Intl.DateTimeFormatOptions = {
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+      };
+      setCurrentDateTime(now.toLocaleString(undefined, options));
+    };
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = () => {
     logout();
     router.replace('/login');
@@ -101,10 +121,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
 
   const toggleSidebar = () => {
     setSidebarExpanded(!isSidebarExpanded);
-  };
-
-  const handleMenuClick = (href: string) => {
-    router.push(href);
   };
 
   const getMenuItemsByRole = (): MenuItem[] => {
@@ -187,7 +203,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
       {
         icon: <FaTasks />,
         label: 'Reports',
-        href: '/reports'
+        subItems: [
+          {
+            icon: <FaCalendarAlt />,
+            label: 'Attendance Report',
+            href: '/reports/Attendance'
+          },
+          {
+            icon: <FaFileAlt />,
+            label: 'Leave Report',
+            href: '/reports/leave'
+          }
+        ]
       },
       {
         icon: <FaHeadset />,
@@ -202,31 +229,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
   const renderMenuItem = (item: MenuItem): JSX.Element => {
     const isExpanded = expandedMenus.includes(item.label);
     const isActive = pathname === item.href;
-    const hasSubItems = item.subItems && item.subItems.length > 0;
-    const isParentOfActive = hasSubItems && item.subItems?.some(subItem => pathname === subItem.href);
     
     return (
       <li key={item.label}>
-        {hasSubItems ? (
+        {item.subItems ? (
           <div className="space-y-1">
             <button
               onClick={() => toggleMenu(item.label)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 ease-in-out
-                ${(isExpanded || isParentOfActive)
-                  ? 'bg-gradient-to-r from-blue-50 to-blue-100/50 text-blue-700 shadow-sm' 
-                  : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-700'
-                }
-                group relative overflow-hidden
-              `}
+              className={`w-full flex items-center justify-between px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all duration-200 ${
+                isExpanded ? 'bg-blue-50 text-blue-700' : ''
+              }`}
             >
-              <div className="flex items-center min-w-0 relative z-10">
-                <span className={`text-xl w-8 transition-all duration-300 transform group-hover:scale-110 ${
-                  (isExpanded || isParentOfActive) ? 'text-blue-600' : 'text-gray-500'
-                }`}>
-                  {item.icon}
-                </span>
+              <div className="flex items-center min-w-0">
+                <span className={`text-xl w-8 transition-colors ${isExpanded ? 'text-blue-700' : 'text-gray-500'}`}>{item.icon}</span>
                 {isSidebarExpanded && (
-                  <span className="font-medium truncate ml-3 tracking-wide">{item.label}</span>
+                  <span className="font-medium truncate">{item.label}</span>
                 )}
               </div>
               {isSidebarExpanded && (
@@ -252,30 +269,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
             )}
           </div>
         ) : (
-          <button
-            onClick={() => {
-              if (item.href) {
-                handleMenuClick(item.href);
-              }
-              setMobileMenuOpen(false);
-            }}
-            className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ease-in-out
-              ${isActive 
-                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
-                : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
-              }
-              group relative overflow-hidden
-            `}
+          <Link
+            href={item.href || '#'}
+            className={`w-full flex items-center px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all duration-200 ${
+              isActive ? 'bg-blue-50 text-blue-700' : ''
+            }`}
           >
-            <span className={`text-xl w-8 transition-all duration-300 transform group-hover:scale-110 ${
-              isActive ? 'text-white' : 'text-gray-500'
-            }`}>
-              {item.icon}
-            </span>
+            <span className={`text-xl w-8 transition-colors ${isActive ? 'text-blue-700' : 'text-gray-500'}`}>{item.icon}</span>
             {isSidebarExpanded && (
-              <span className="font-medium truncate ml-3 tracking-wide">{item.label}</span>
+              <span className="font-medium truncate">{item.label}</span>
             )}
-          </button>
+          </Link>
         )}
       </li>
     );
@@ -328,202 +332,188 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      {/* Overlay for mobile */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm lg:hidden z-40"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
+    <UserContext.Provider value={userDetails}>
+      <div className="min-h-screen flex bg-white">
+        {/* Overlay for mobile */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm lg:hidden z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
 
-      {/* Sidebar with integrated header */}
-      <aside
-        className={`fixed inset-y-0 left-0 flex flex-col
-          ${isSidebarExpanded ? 'w-72' : 'w-20'}
-          bg-white shadow-xl border-r border-gray-100 z-30
-          transition-all duration-300 ease-in-out
-        `}
-      >
-        {/* Logo and Toggle */}
-        <div className="flex items-center h-16 px-4 border-b border-gray-100/75 bg-white/95 backdrop-blur-sm sticky top-0 z-10">
-          <div className={`flex items-center ${isSidebarExpanded ? 'justify-between' : 'justify-center'} w-full`}>
-            <div className="flex items-center">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl opacity-20 blur-sm group-hover:opacity-30 transition-opacity duration-300"></div>
-                <Image
-                  src="/logo-exo .png"
-                  alt="Exozen Logo"
-                  width={40}
-                  height={40}
-                  className="relative rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
+        {/* Sidebar with integrated header */}
+        <aside
+          className={`fixed inset-y-0 left-0 flex flex-col
+            ${isSidebarExpanded ? 'w-72' : 'w-20'}
+            bg-white border-r border-gray-200 shadow-xl
+            transition-all duration-300 z-30`}
+        >
+          {/* Logo and Toggle */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 h-[65px]">
+            <div className={`flex items-center ${isSidebarExpanded ? 'justify-start' : 'justify-center'} w-full`}>
+              <Image
+                src="/logo-exo .png"
+                alt="Exozen Logo"
+                width={40}
+                height={40}
+                className="rounded-xl shadow-sm"
+              />
               {isSidebarExpanded && (
                 <span className="ml-3 font-bold text-gray-800 text-2xl tracking-wide">Exozen</span>
               )}
             </div>
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 transition-all duration-300 ease-in-out"
+              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all duration-200 ml-auto flex-shrink-0"
               title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
             >
               {isSidebarExpanded ? <FaChevronLeft className="w-5 h-5"/> : <FaChevronRight className="w-5 h-5"/>}
             </button>
           </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <ul className="p-4 space-y-2">
+              {menuItems.map(renderMenuItem)}
+            </ul>
+          </nav>
+        </aside>        {/* Main Content with Header */}
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
+          isSidebarExpanded ? 'ml-72' : 'ml-20'
+        }`}>
+          {/* Header */}
+          <header className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200 z-20 sticky top-0 h-[64px] flex items-center">
+            <div className="flex items-center justify-between px-4 w-full h-full">
+              {/* Left: Menu Icon & Page Title */}
+              <div className="flex items-center gap-3 min-w-0">
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 text-gray-500 hover:text-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  title={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                >
+                  <FaBars className="w-5 h-5" />
+                </button>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight truncate">
+                  {(() => {
+                    const current = menuItems.find(item => item.href === pathname);
+                    return current ? current.label : '';
+                  })()}
+                </h1>
+              </div>
+
+              {/* Right: Date/Time, Settings, Notifications, Profile */}
+              <div className="flex items-center gap-2 ml-auto">
+                {/* Date and Time */}
+                <div className="bg-blue-50 text-blue-700 font-medium text-sm px-4 py-1.5 rounded-full border border-blue-100 min-w-fit">
+                  {currentDateTime}
+                </div>
+                {/* Settings Icon */}
+                <button className="p-2 text-gray-500 hover:text-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                  <FaCog className="w-5 h-5" />
+                </button>
+                {/* Notifications */}
+                <button className="relative p-2 text-blue-600 hover:text-blue-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                  <FaBell className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 rounded-full text-[11px] font-bold text-white flex items-center justify-center ring-2 ring-white">3</span>
+                </button>
+                {/* User Profile */}
+                <div className="flex items-center relative">
+                  {loading ? (
+                    <div className="animate-pulse flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+                    </div>
+                  ) : (
+                    <div className="relative group flex-shrink-0">
+                      <div className="relative cursor-pointer" onClick={handleProfileImageClick}>
+                        <img
+                          src={userDetails?.employeeImage || '/placeholder-user.jpg'}
+                          alt={userDetails?.fullName || 'User'}
+                          className="relative w-10 h-10 rounded-full object-cover border-2 border-white shadow transition-transform duration-200 group-hover:scale-105"
+                        />
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                      </div>
+                      {/* Profile Dropdown */}
+                      {showProfileDropdown && (
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 transform transition-all duration-200 origin-top-right">
+                          <button
+                            onClick={handleEditProfile}
+                            className="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 flex items-center gap-2 rounded-lg text-base"
+                          >
+                            <FaUser className="text-blue-500 w-5 h-5" /> Edit Profile
+                          </button>
+                          <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-4 py-2 hover:bg-red-50 text-gray-700 flex items-center gap-2 rounded-lg text-base"
+                          >
+                            <FaSignOutAlt className="text-red-500 w-5 h-5" /> Logout
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {isSidebarExpanded && !loading && userDetails && (
+                    <div className="hidden md:block min-w-0 ml-2">
+                      <p className="text-base font-bold text-gray-800 truncate">{userDetails.fullName}</p>
+                      <p className="text-sm font-medium text-gray-500 truncate">{userDetails.designation}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </header>          {/* Main Content */}
+          <main className="p-4 md:p-8 bg-white min-h-screen overflow-y-auto overflow-x-hidden h-[calc(100vh-64px)]">
+            {children}
+          </main>
         </div>
 
-        {/* User Profile Section */}
-        {userDetails && (
-          <div className={`px-4 py-4 border-b border-gray-100/75 bg-white/95 backdrop-blur-sm transition-all duration-300 ease-in-out
-            ${isSidebarExpanded ? 'items-start' : 'items-center'}
-          `}>
-            <div className={`flex ${isSidebarExpanded ? 'items-start space-x-4' : 'flex-col items-center'}`}>
-              <div className="relative group flex-shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full opacity-20 blur-md group-hover:opacity-30 transition-opacity duration-300"></div>
+        {/* Mobile Menu Toggle */}
+        <button
+          onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+          className="fixed bottom-6 right-6 lg:hidden bg-white text-blue-600 p-4 rounded-full 
+            shadow-lg border border-gray-200 hover:bg-blue-50 transition-all duration-200 z-50"
+          title="Toggle menu"
+        >
+          {isMobileMenuOpen ? <FaTimes className="w-6 h-6"/> : <FaBars className="w-6 h-6"/>}
+        </button>
+
+        {/* Edit Profile Modal */}
+        {showEditProfileModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full mx-auto shadow-2xl p-8 relative">
+              <button
+                onClick={() => setShowEditProfileModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 rounded-full p-2 hover:bg-gray-100"
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile Image</h2>
+              <div className="flex flex-col items-center gap-4">
                 <img
-                  src={userDetails.employeeImage || '/placeholder-user.jpg'}
-                  alt={userDetails.fullName}
-                  className="relative w-12 h-12 rounded-full object-cover border-2 border-white shadow-md transition-transform duration-300 group-hover:scale-105"
+                  src={selectedImage ? URL.createObjectURL(selectedImage) : userDetails?.employeeImage || '/placeholder-user.jpg'}
+                  alt="Profile Preview"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-md"
                 />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                  className="block w-full text-sm text-gray-900 border border-gray-200 rounded-xl cursor-pointer bg-gray-50 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all duration-300"
+                />
+                {uploadError && <div className="text-red-500 text-sm mt-2 bg-red-50 px-4 py-2 rounded-lg border border-red-100">{uploadError}</div>}
+                <button
+                  onClick={handleProfileImageUpload}
+                  disabled={!selectedImage || uploading}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                >
+                  {uploading ? 'Uploading...' : 'Save'}
+                </button>
               </div>
-              {isSidebarExpanded && (
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{userDetails.fullName}</p>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{userDetails.designation}</p>
-                  <div className="flex items-center mt-2 text-xs text-gray-500">
-                    <FaIdCard className="w-3 h-3 mr-1" />
-                    <span>{userDetails.employeeId}</span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          <ul className="space-y-2">
-            {menuItems.map(renderMenuItem)}
-          </ul>
-        </nav>
-
-        {/* Logout Button */}
-        <div className="p-4 border-t border-gray-100/75 bg-white/95 backdrop-blur-sm">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg
-              bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800
-              text-white transition-all duration-300 ease-in-out group
-              justify-center font-medium text-sm relative overflow-hidden shadow-md hover:shadow-lg"
-          >
-            <span className="inline-flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-              <FaSignOutAlt className="text-xl" />
-            </span>
-            {isSidebarExpanded && (
-              <span className="transition-transform duration-300 group-hover:scale-105">Logout</span>
-            )}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content with Header */}
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${
-        isSidebarExpanded ? 'ml-72' : 'ml-20'
-      }`}>
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 z-20 sticky top-0 h-[65px] flex items-center">
-          <div className="flex items-center justify-between px-8 w-full">
-            {/* Left side - Employee ID */}
-            <div className="flex items-center">
-              {userDetails && (
-                <div className="flex items-center space-x-4 text-gray-700">
-                  <div className="p-2 bg-gray-100 rounded-lg shadow-sm border border-gray-200 flex-shrink-0">
-                    <FaIdCard className="text-2xl text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Employee ID</p>
-                    <p className="text-lg font-bold text-blue-700">{userDetails.employeeId}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right side - Notifications and Profile */}
-            <div className="flex items-center gap-6">
-              {/* Notifications */}
-              <button className="relative p-3 rounded-xl bg-white shadow-sm border border-gray-200 hover:bg-gray-50 transition-all duration-200 group flex-shrink-0">
-                <FaBell className="text-2xl text-blue-600" />
-                <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 rounded-full text-xs font-bold text-white flex items-center justify-center ring-2 ring-white">
-                  3
-                </span>
-              </button>
-
-              {/* User Profile */}
-              <div className="flex items-center space-x-4 pl-6 border-l border-gray-200">
-                {loading ? (
-                  <div className="animate-pulse flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-200"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                      <div className="h-3 w-20 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative group flex-shrink-0">
-                    <div className="relative cursor-pointer">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full opacity-20 blur-md"></div>
-                      <img
-                        src={userDetails?.employeeImage || '/placeholder-user.jpg'}
-                        alt={userDetails?.fullName || 'User'}
-                        className="relative w-12 h-12 rounded-full object-cover border-2 border-white shadow-md transition-transform duration-200 group-hover:scale-105"
-                      />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                    </div>
-                    <div className="hidden group-hover:block absolute right-0 top-full mt-3 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-3 z-50 transform transition-all duration-200 origin-top-right">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-base font-bold text-gray-800 truncate">{userDetails?.fullName}</p>
-                        <p className="text-sm font-medium text-blue-600 mt-1 truncate">{userDetails?.designation}</p>
-                      </div>
-                      <div className="px-4 py-2">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <FaIdCard className="mr-3 text-blue-500 text-lg" />
-                          <span className="font-medium">{userDetails?.employeeId}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {isSidebarExpanded && !loading && userDetails && (
-                  <div className="hidden md:block min-w-0">
-                    <p className="text-base font-bold text-gray-800 truncate">{userDetails.fullName}</p>
-                    <p className="text-sm font-medium text-gray-500 truncate">{userDetails.designation}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="p-8 bg-gray-100 min-h-screen">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
-            {children}
-          </div>
-        </main>
       </div>
-
-      {/* Mobile Menu Toggle */}
-      <button
-        onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-        className="fixed bottom-6 right-6 lg:hidden bg-white text-blue-600 p-4 rounded-full 
-          shadow-lg border border-gray-200 hover:bg-blue-50 transition-all duration-200 z-50"
-        title="Toggle menu"
-      >
-        {isMobileMenuOpen ? <FaTimes className="w-6 h-6"/> : <FaBars className="w-6 h-6"/>}
-      </button>
-    </div>
+    </UserContext.Provider>
   );
 };
 

@@ -10,7 +10,7 @@ import Confetti from 'react-confetti';
 import { getDashboardData, getMonthlyStats, submitLeaveRequest, submitRegularization, uploadDocument, getLeaveBalance } from '@/services/dashboard';
 import { getEmployeeId } from '@/services/auth';
 import type { BirthdayResponse, WorkAnniversaryResponse, LeaveBalanceResponse, MonthlyStats, DepartmentStats, AnalyticsViewType, ChartType, LeaveType } from '../../types/dashboard';
-import { FaCalendarCheck, FaClipboardList, FaFileAlt, FaFileUpload, FaPlusCircle, FaRegCalendarPlus, FaTicketAlt, FaUserClock, FaClipboardCheck } from 'react-icons/fa';
+import { FaClipboardList, FaFileUpload, FaRegCalendarPlus, FaTicketAlt } from 'react-icons/fa';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -22,7 +22,6 @@ export default function Dashboard() {
   const [birthdays, setBirthdays] = useState<BirthdayResponse | null>(null);
   const [anniversaries, setAnniversaries] = useState<WorkAnniversaryResponse | null>(null);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalanceResponse | null>(null);
-  const [attendanceActivities, setAttendanceActivities] = useState<any[]>([]);
   const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
@@ -76,11 +75,6 @@ export default function Dashboard() {
   const [analyticsView, setAnalyticsView] = useState<AnalyticsViewType>('attendance');
   const [attendanceChartType, setAttendanceChartType] = useState<ChartType>('bar');
   const [leaveChartType, setLeaveChartType] = useState<ChartType>('bar');
-
-  // Department stats state
-  const [departmentStats, setDepartmentStats] = useState<DepartmentStats | null>(null);
-  const [departmentStatsLoading, setDepartmentStatsLoading] = useState(true);
-  const [departmentStatsError, setDepartmentStatsError] = useState<string | null>(null);
 
   // Ticket Form State
   const [ticketForm, setTicketForm] = useState({
@@ -148,11 +142,10 @@ export default function Dashboard() {
       const leaveBalanceData = await getLeaveBalance(employeeId || '');
       setLeaveBalance(leaveBalanceData);
 
-      // Fetch other dashboard data
-      const data = await getDashboardData(employeeId || '', monthToFetch, yearToFetch);
-      setBirthdays(data.birthdays);
-      setAnniversaries(data.anniversaries);
-      setAttendanceActivities(data.attendanceActivities);
+      // Fetch birthdays and anniversaries only
+      const { birthdays, anniversaries } = await getDashboardData();
+      setBirthdays(birthdays);
+      setAnniversaries(anniversaries);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -162,26 +155,11 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch department stats
-  const fetchDepartmentStats = async () => {
-    try {
-      setDepartmentStatsLoading(true);
-      const stats = await getDashboardData('DEPARTMENT_STATS_ENDPOINT', currentMonth, currentYear);
-      setDepartmentStats(stats as unknown as DepartmentStats);
-      setDepartmentStatsError(null);
-    } catch (error) {
-      console.error('Error fetching department stats:', error);
-      setDepartmentStatsError('Failed to fetch department statistics');
-      setDepartmentStats(null);
-    } finally {
-      setDepartmentStatsLoading(false);
-    }
-  };
+
 
   // Initial data fetch on component mount
   useEffect(() => {
     fetchData();
-    fetchDepartmentStats();
 
     // Poll every 5 minutes
     const pollInterval = setInterval(() => {
@@ -223,94 +201,6 @@ export default function Dashboard() {
     </div>
   );
 
-  const RefreshButton = () => (
-    <button
-      onClick={() => {
-        setRefreshing(true);
-        if (currentMonth > 0) {
-          fetchData(false, currentMonth, currentYear);
-        } else {
-           setMonthlyStatsCache({});
-           fetchData(false, new Date().getMonth() + 1, new Date().getFullYear());
-        }
-      }}
-      className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white text-gray-600
-        rounded-full text-sm font-medium transition-all duration-300 hover:shadow-md
-        border border-gray-200 hover:border-gray-300"
-      disabled={refreshing}
-    >
-      <svg
-        className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-        />
-      </svg>
-      {refreshing ? 'Refreshing...' : 'Refresh'}
-    </button>
-  );
-
-  // Colors for leave types
-  const leaveColors = {
-    EL: {
-      gradient: 'from-emerald-400 to-emerald-600',
-      bg: 'rgba(16, 185, 129, 0.8)',
-      border: 'rgba(16, 185, 129, 1)',
-      light: 'bg-emerald-50',
-      text: 'text-emerald-600'
-    },
-    SL: {
-      gradient: 'from-red-400 to-red-600',
-      bg: 'rgba(239, 68, 68, 0.8)',
-      border: 'rgba(239, 68, 68, 1)',
-      light: 'bg-red-50',
-      text: 'text-red-600'
-    },
-    CL: {
-      gradient: 'from-blue-400 to-blue-600',
-      bg: 'rgba(59, 130, 246, 0.8)',
-      border: 'rgba(59, 130, 246, 1)',
-      light: 'bg-blue-50',
-      text: 'text-blue-600'
-    },
-    CompOff: {
-      gradient: 'from-purple-400 to-purple-600',
-      bg: 'rgba(139, 92, 246, 0.8)',
-      border: 'rgba(139, 92, 246, 1)',
-      light: 'bg-purple-50',
-      text: 'text-purple-600'
-    }
-  };
-
-  // Colors for attendance status
-  const attendanceColors = {
-    Present: {
-      bg: 'rgba(16, 185, 129, 0.8)',
-      border: 'rgba(16, 185, 129, 1)',
-      text: 'text-emerald-600'
-    },
-    Absent: {
-      bg: 'rgba(239, 68, 68, 0.8)',
-      border: 'rgba(239, 68, 68, 1)',
-      text: 'text-red-600'
-    },
-    Late: {
-      bg: 'rgba(245, 158, 11, 0.8)',
-      border: 'rgba(245, 158, 11, 1)',
-      text: 'text-amber-600'
-    },
-    Early: { // Adding early arrivals color for consistency
-      bg: 'rgba(75, 192, 192, 0.8)',
-      border: 'rgba(75, 192, 192, 1)',
-      text: 'text-teal-600' // Assuming a teal text color
-    }
-  };
 
   // Update barChartOptions with new configuration
   const barChartOptions: ChartOptions<'bar'> = {
@@ -475,7 +365,7 @@ export default function Dashboard() {
           data: currentMonth === 0 
             ? monthlyStats.data.monthlyPresent || Array(12).fill(0)
             : [monthlyStats.data.presentDays],
-          backgroundColor: 'rgba(16, 185, 129, 0.2)',
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
           borderColor: 'rgba(16, 185, 129, 1)',
           borderWidth: 3,
           borderRadius: 6,
@@ -486,7 +376,7 @@ export default function Dashboard() {
           data: currentMonth === 0 
             ? monthlyStats.data.monthlyLateArrivals || Array(12).fill(0)
             : [monthlyStats.data.lateArrivals],
-          backgroundColor: 'rgba(245, 158, 11, 0.2)',
+          backgroundColor: 'rgba(245, 158, 11, 0.8)',
           borderColor: 'rgba(245, 158, 11, 1)',
           borderWidth: 3,
           borderRadius: 6,
@@ -497,7 +387,7 @@ export default function Dashboard() {
           data: currentMonth === 0 
             ? monthlyStats.data.monthlyEarlyArrivals || Array(12).fill(0)
             : [monthlyStats.data.earlyArrivals],
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          backgroundColor: 'rgba(75, 192, 192, 0.8)',
           borderColor: 'rgba(75, 192, 192, 1)',
           borderWidth: 3,
           borderRadius: 6,
@@ -508,7 +398,7 @@ export default function Dashboard() {
           data: currentMonth === 0 
             ? monthlyStats.data.monthlyAbsent || Array(12).fill(0)
             : [monthlyStats.data.absentDays],
-          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          backgroundColor: 'rgba(239, 68, 68, 0.8)',
           borderColor: 'rgba(239, 68, 68, 1)',
           borderWidth: 3,
           borderRadius: 6,
@@ -527,10 +417,10 @@ export default function Dashboard() {
           monthlyStats.data.absentDays
         ],
         backgroundColor: [
-          'rgba(16, 185, 129, 0.2)',
-          'rgba(245, 158, 11, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(239, 68, 68, 0.2)'
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(239, 68, 68, 0.8)'
         ],
         borderColor: [
           'rgba(16, 185, 129, 1)',
@@ -577,7 +467,7 @@ export default function Dashboard() {
         {
           label: 'Allocated',
           data: leaveTypes.map(type => leaveBalance.balances[type as LeaveType].allocated),
-          backgroundColor: 'rgba(16, 185, 129, 0.2)',
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
           borderColor: 'rgba(16, 185, 129, 1)',
           borderWidth: 3,
           borderRadius: 6,
@@ -585,7 +475,7 @@ export default function Dashboard() {
         {
           label: 'Used',
           data: leaveTypes.map(type => leaveBalance.balances[type as LeaveType].used),
-          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          backgroundColor: 'rgba(239, 68, 68, 0.8)',
           borderColor: 'rgba(239, 68, 68, 1)',
           borderWidth: 3,
           borderRadius: 6,
@@ -593,7 +483,7 @@ export default function Dashboard() {
         {
           label: 'Remaining',
           data: leaveTypes.map(type => leaveBalance.balances[type as LeaveType].remaining),
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
           borderColor: 'rgba(59, 130, 246, 1)',
           borderWidth: 3,
           borderRadius: 6,
@@ -606,10 +496,10 @@ export default function Dashboard() {
       datasets: [{
         data: leaveTypes.map(type => leaveBalance.balances[type as LeaveType].allocated),
         backgroundColor: [
-          'rgba(16, 185, 129, 0.2)',
-          'rgba(239, 68, 68, 0.2)',
-          'rgba(59, 130, 246, 0.2)',
-          'rgba(139, 92, 246, 0.2)',
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(239, 68, 68, 0.8)',
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(139, 92, 246, 0.8)',
         ],
         borderColor: [
           'rgba(16, 185, 129, 1)',
@@ -631,7 +521,7 @@ export default function Dashboard() {
             
           </div>
 
-          <div className="w-full h-[300px] relative">
+          <div className="w-full h-[200px] relative">
             {leaveChartType === 'bar' ? (
               <Bar data={chartData} options={barChartOptions} />
             ) : (
@@ -641,83 +531,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-      </div>
-    );
-  };
-
-  const renderDepartmentChart = () => {
-    if (!departmentStats?.data) return null;
-
-    const chartData: ChartData<'bar'> = {
-      labels: departmentStats.data.map(stat => stat.departmentName),
-      datasets: [
-        {
-          label: 'Total Employees',
-          data: departmentStats.data.map(stat => stat.totalEmployees),
-          backgroundColor: 'rgba(54, 162, 235, 0.6)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1,
-        },
-        {
-          label: 'Present Today',
-          data: departmentStats.data.map(stat => stat.presentToday),
-          backgroundColor: 'rgba(75, 192, 192, 0.6)',
-          borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1,
-        },
-        {
-          label: 'On Leave Today',
-          data: departmentStats.data.map(stat => stat.onLeaveToday),
-          backgroundColor: 'rgba(255, 159, 64, 0.6)',
-          borderColor: 'rgba(255, 159, 64, 1)',
-          borderWidth: 1,
-        }
-      ]
-    };
-
-    const options: ChartOptions<'bar'> = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top' as const,
-        },
-        title: {
-          display: true,
-          text: 'Department-wise Employee Distribution',
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Number of Employees'
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Departments'
-          }
-        }
-      },
-    };
-
-    return (
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="text-lg font-semibold mb-4">Department Statistics</h3>
-        {departmentStatsLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : departmentStatsError ? (
-          <div className="text-red-500 text-center py-4">{departmentStatsError}</div>
-        ) : (
-          <div className="h-[400px]">
-            <Bar data={chartData} options={options} />
-          </div>
-        )}
       </div>
     );
   };
@@ -920,10 +733,10 @@ export default function Dashboard() {
       )}
       {/* Welcome Section */}
       <div className="mt-0 mb-5">
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative overflow-hidden text-white">
-          <div className="space-y-1 z-10">
-            <h1 className="text-2xl md:text-3xl font-extrabold drop-shadow-lg">
-              Welcome back, <span className="text-white font-extrabold">{userDetails?.fullName || <span className="inline-block h-6 w-32 bg-blue-300 rounded animate-pulse align-middle">&nbsp;</span>}</span>!
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-white">
+          <div>
+            <h1 className="text-2xl md:text-2xl font-bold drop-shadow-lg">
+              Welcome back, <span className="text-white font-bold">{userDetails?.fullName || <span className="inline-block h-6 w-32 bg-blue-300 rounded animate-pulse align-middle">&nbsp;</span>}</span>!
             </h1>
             <p className="text-base md:text-lg font-medium opacity-90 mt-1">
               {getWelcomeMessage()}
@@ -936,95 +749,90 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="mb-6">
-        <h2 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <button 
-            onClick={() => setShowLeaveModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-indigo-300 group"
-          >
-            <div className="p-3 rounded-full bg-indigo-100 text-indigo-600 mb-3 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <FaRegCalendarPlus className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Request Leave</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowRegularizationModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-amber-300 group"
-          >
-            <div className="p-3 rounded-full bg-amber-100 text-amber-600 mb-3 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
-              <FaClipboardList className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-amber-600 transition-colors">Regularize Attendance</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowUploadModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-300 group"
-          >
-            <div className="p-3 rounded-full bg-emerald-100 text-emerald-600 mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-              <FaFileUpload className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">Upload Document</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowTicketModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-purple-300 group"
-          >
-            <div className="p-3 rounded-full bg-purple-100 text-purple-600 mb-3 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-              <FaTicketAlt className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-purple-600 transition-colors">Raise Ticket</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Dashboard Analytics Section */}
-      <div className="mb-6 bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          {/* Section Title */}
-          {/* Moved dynamic title into renderAttendanceChart */}
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-             <span className="text-2xl"></span>
-             Dashboard Analytics {/* Keep a general title for the section */}
-           </h2>
-          {/* Refresh Button/Spinner */}
-          {refreshing && <LoadingSpinner />}
-        </div>
-
-        {/* Controls Area */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200">
-           {/* View Toggles */}
-           <div className="flex gap-3">
-            <button
-              onClick={() => setAnalyticsView('attendance')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${analyticsView === 'attendance' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+      {/* Quick Actions and Dashboard Analytics Section */}
+      <div className="grid grid-cols-12 gap-6 mb-6 h-[calc(100vh-120px)]">
+        {/* Quick Actions */}
+        <div className="col-span-12 lg:col-span-2 bg-white rounded-2xl shadow-lg p-4 overflow-y-auto">
+          <h2 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+            Quick Actions
+          </h2>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => setShowLeaveModal(true)}
+              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-indigo-300 group"
             >
-              Attendance Analytics
+              <div className="p-2 rounded-full bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+                <FaRegCalendarPlus className="text-lg" />
+              </div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Leave</span>
             </button>
-            <button
-              onClick={() => setAnalyticsView('leave')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${analyticsView === 'leave' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            
+            <button 
+              onClick={() => setShowRegularizationModal(true)}
+              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-amber-300 group"
             >
-              Leave Analytics
+              <div className="p-2 rounded-full bg-amber-100 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
+                <FaClipboardList className="text-lg" />
+              </div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-amber-600 transition-colors">Attendance</span>
             </button>
-           </div>
-
-           {/* Month Selector and Chart Type Toggles - Grouped */}
-           <div className="flex flex-col sm:flex-row items-center gap-4">
-             {analyticsView === 'attendance' && renderMonthSelector()}
-             {renderChartTypeToggle()}
-           </div>
+            
+            <button 
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-300 group"
+            >
+              <div className="p-2 rounded-full bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                <FaFileUpload className="text-lg" />
+              </div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">Document</span>
+            </button>
+            
+            <button 
+              onClick={() => setShowTicketModal(true)}
+              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-purple-300 group"
+            >
+              <div className="p-2 rounded-full bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
+                <FaTicketAlt className="text-lg" />
+              </div>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-purple-600 transition-colors">Raise Ticket</span>
+            </button>
+          </div>
         </div>
 
-        {/* Chart Area */}
-        <div className="relative w-full">
-          {renderChart()}
+        {/* Dashboard Analytics */}
+        <div className="col-span-12 lg:col-span-10 bg-white rounded-2xl shadow-lg p-4 overflow-y-auto max-h-[calc(100vh-120px)]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-3">
+              Dashboard Analytics
+            </h2>
+            {refreshing && <LoadingSpinner />}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-gray-200">
+            <div className="flex gap-3">
+              <button
+                onClick={() => setAnalyticsView('attendance')}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${analyticsView === 'attendance' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                Attendance Analytics
+              </button>
+              <button
+                onClick={() => setAnalyticsView('leave')}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${analyticsView === 'leave' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                Leave Analytics
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              {analyticsView === 'attendance' && renderMonthSelector()}
+              {renderChartTypeToggle()}
+            </div>
+          </div>
+
+          <div className="relative w-full">
+            {renderChart()}
+          </div>
         </div>
       </div>
 
