@@ -149,16 +149,18 @@ function RequestLeaveContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-blue-600 rounded-xl">
-            <FaPlus className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Request Leave</h1>
-            <p className="text-gray-600">Submit a new leave request</p>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-xl shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+              <FaPlus className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">Request Leave</h1>
+              <p className="text-blue-100 mt-1">Submit and track your leave applications</p>
+            </div>
           </div>
         </div>
       </div>

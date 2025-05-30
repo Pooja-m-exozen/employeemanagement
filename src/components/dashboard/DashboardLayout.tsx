@@ -1,3 +1,5 @@
+'use client';
+
 import React, { ReactNode, useState, useEffect } from 'react';
 import type { JSX } from 'react';
 import Image from 'next/image';
@@ -93,6 +95,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     setSidebarExpanded(!isSidebarExpanded);
   };
 
+  const handleMenuClick = (href: string) => {
+    router.push(href);
+  };
+
   const getMenuItemsByRole = (): MenuItem[] => {
     const role = getUserRole();
     
@@ -173,7 +179,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {
         icon: <FaTasks />,
         label: 'Reports',
-        href: '/reports'
+        subItems: [
+          {
+            icon: <FaCalendarAlt />,
+            label: 'Attendance Report',
+            href: '/reports/Attendance'
+          },
+          {
+            icon: <FaFileAlt />,
+            label: 'Leave Report',
+            href: '/reports/leave'
+          }
+        ]
       },
       {
         icon: <FaHeadset />,
@@ -196,73 +213,61 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         {hasSubItems ? (
           <div className="space-y-1">
             <button
-              onClick={() => {
-                toggleMenu(item.label);
-                // Remove navigation on parent click, only toggle menu
-              }}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200
+              onClick={() => toggleMenu(item.label)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 ease-in-out
                 ${(isExpanded || isParentOfActive)
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                  ? 'bg-gradient-to-r from-blue-50 to-blue-100/50 text-blue-700 shadow-sm' 
+                  : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-700'
                 }
                 group relative overflow-hidden
               `}
             >
               <div className="flex items-center min-w-0 relative z-10">
-                <span className={`text-xl w-8 transition-transform group-hover:scale-110 ${
+                <span className={`text-xl w-8 transition-all duration-300 transform group-hover:scale-110 ${
                   (isExpanded || isParentOfActive) ? 'text-blue-600' : 'text-gray-500'
                 }`}>
                   {item.icon}
                 </span>
                 {isSidebarExpanded && (
-                  <span className="font-medium truncate ml-3">{item.label}</span>
+                  <span className="font-medium truncate ml-3 tracking-wide">{item.label}</span>
                 )}
               </div>
               {isSidebarExpanded && (
-                <span className={`ml-2 flex-shrink-0 transition-transform duration-200 ${
-                  isExpanded ? 'rotate-180' : ''
+                <span className={`ml-2 flex-shrink-0 transition-transform duration-300 ${
+                  isExpanded ? 'rotate-90' : ''
                 }`}>
                   <FaChevronRight className="w-4 h-4" />
                 </span>
               )}
-              {(isExpanded || isParentOfActive) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-blue-100/50 opacity-50" />
-              )}
             </button>
             {isExpanded && isSidebarExpanded && (
-              <ul className="pl-4 space-y-1">
+              <ul className="pl-4 space-y-1 animate-fadeIn">
                 {item.subItems?.map(subItem => {
                   const isSubItemActive = pathname === subItem.href;
                   return (
                     <li key={subItem.label}>
-                      <Link
-                        href={subItem.href || '#'}
-                        onClick={(e) => {
-                          if (!subItem.href) {
-                            e.preventDefault();
-                            return;
+                      <button
+                        onClick={() => {
+                          if (subItem.href) {
+                            handleMenuClick(subItem.href);
                           }
-                          // Close mobile menu if open
                           setMobileMenuOpen(false);
                         }}
-                        className={`w-full flex items-center px-4 py-2.5 rounded-xl transition-all duration-200
+                        className={`w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-300 ease-in-out
                           ${isSubItemActive 
-                            ? 'bg-blue-600 text-white' 
-                            : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
+                            : 'text-gray-500 hover:bg-blue-50/50 hover:text-blue-600'
                           }
                           group relative overflow-hidden
                         `}
                       >
-                        <span className={`text-sm w-8 transition-transform group-hover:scale-110 ${
+                        <span className={`text-sm w-8 transition-all duration-300 transform group-hover:scale-110 ${
                           isSubItemActive ? 'text-white' : 'text-gray-400'
                         }`}>
                           {subItem.icon}
                         </span>
                         <span className="font-medium text-sm truncate ml-3">{subItem.label}</span>
-                        {isSubItemActive && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-blue-700/90 -z-10" />
-                        )}
-                      </Link>
+                      </button>
                     </li>
                   );
                 })}
@@ -270,36 +275,30 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             )}
           </div>
         ) : (
-          <Link
-            href={item.href || '#'}
-            onClick={(e) => {
-              if (!item.href) {
-                e.preventDefault();
-                return;
+          <button
+            onClick={() => {
+              if (item.href) {
+                handleMenuClick(item.href);
               }
-              // Close mobile menu if open
               setMobileMenuOpen(false);
             }}
-            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200
+            className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ease-in-out
               ${isActive 
-                ? 'bg-blue-600 text-white' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
+                : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
               }
               group relative overflow-hidden
             `}
           >
-            <span className={`text-xl w-8 transition-transform group-hover:scale-110 ${
+            <span className={`text-xl w-8 transition-all duration-300 transform group-hover:scale-110 ${
               isActive ? 'text-white' : 'text-gray-500'
             }`}>
               {item.icon}
             </span>
             {isSidebarExpanded && (
-              <span className="font-medium truncate ml-3">{item.label}</span>
+              <span className="font-medium truncate ml-3 tracking-wide">{item.label}</span>
             )}
-            {isActive && (
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-blue-700/90 -z-10" />
-            )}
-          </Link>
+          </button>
         )}
       </li>
     );
@@ -319,22 +318,22 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <aside
         className={`fixed inset-y-0 left-0 flex flex-col
           ${isSidebarExpanded ? 'w-72' : 'w-20'}
-          bg-white shadow-2xl z-30
+          bg-white shadow-xl border-r border-gray-100 z-30
           transition-all duration-300 ease-in-out
         `}
       >
         {/* Logo and Toggle */}
-        <div className="flex items-center h-16 px-4 border-b border-gray-100">
+        <div className="flex items-center h-16 px-4 border-b border-gray-100/75 bg-white/95 backdrop-blur-sm sticky top-0 z-10">
           <div className={`flex items-center ${isSidebarExpanded ? 'justify-between' : 'justify-center'} w-full`}>
             <div className="flex items-center">
               <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl opacity-20 blur-sm"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl opacity-20 blur-sm group-hover:opacity-30 transition-opacity duration-300"></div>
                 <Image
                   src="/logo-exo .png"
                   alt="Exozen Logo"
                   width={40}
                   height={40}
-                  className="relative rounded-xl shadow-sm transition-transform duration-200 group-hover:scale-105"
+                  className="relative rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
               {isSidebarExpanded && (
@@ -343,7 +342,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </div>
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-blue-600 transition-all duration-200"
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 transition-all duration-300 ease-in-out"
               title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
             >
               {isSidebarExpanded ? <FaChevronLeft className="w-5 h-5"/> : <FaChevronRight className="w-5 h-5"/>}
@@ -353,18 +352,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
         {/* User Profile Section */}
         {userDetails && (
-          <div className={`px-4 py-4 border-b border-gray-100 transition-all duration-300
+          <div className={`px-4 py-4 border-b border-gray-100/75 bg-white/95 backdrop-blur-sm transition-all duration-300 ease-in-out
             ${isSidebarExpanded ? 'items-start' : 'items-center'}
           `}>
             <div className={`flex ${isSidebarExpanded ? 'items-start space-x-4' : 'flex-col items-center'}`}>
               <div className="relative group flex-shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full opacity-20 blur-md"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full opacity-20 blur-md group-hover:opacity-30 transition-opacity duration-300"></div>
                 <img
                   src={userDetails.employeeImage || '/placeholder-user.jpg'}
                   alt={userDetails.fullName}
-                  className="relative w-12 h-12 rounded-full object-cover border-2 border-white shadow-md transition-transform duration-200 group-hover:scale-105"
+                  className="relative w-12 h-12 rounded-full object-cover border-2 border-white shadow-md transition-transform duration-300 group-hover:scale-105"
                 />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
               </div>
               {isSidebarExpanded && (
                 <div className="min-w-0">
@@ -381,28 +380,27 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3">
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           <ul className="space-y-2">
             {menuItems.map(renderMenuItem)}
           </ul>
         </nav>
 
         {/* Logout Button */}
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100/75 bg-white/95 backdrop-blur-sm">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg
               bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800
-              text-white transition-all duration-200 group
-              justify-center font-medium text-sm relative overflow-hidden"
+              text-white transition-all duration-300 ease-in-out group
+              justify-center font-medium text-sm relative overflow-hidden shadow-md hover:shadow-lg"
           >
-            <span className="inline-flex items-center justify-center transition-transform group-hover:scale-110">
+            <span className="inline-flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
               <FaSignOutAlt className="text-xl" />
             </span>
             {isSidebarExpanded && (
-              <span className="transition-transform group-hover:scale-105">Logout</span>
+              <span className="transition-transform duration-300 group-hover:scale-105">Logout</span>
             )}
-            <div className="absolute inset-0 bg-gradient-to-r from-red-600/90 to-red-700/90 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10" />
           </button>
         </div>
       </aside>
