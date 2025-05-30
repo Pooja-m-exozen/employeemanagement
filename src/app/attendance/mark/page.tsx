@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { FaCamera, FaSpinner, FaCheckCircle, FaExclamationCircle, FaMapMarkerAlt, FaUserCheck, FaClock, FaCalendarAlt, FaInfoCircle, FaStopCircle, FaTimes } from 'react-icons/fa';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
@@ -302,13 +302,12 @@ function MarkAttendanceContent() {
         return;
       }
 
-      const response = await fetch('https://cafm.zenapi.co.in/api/attendance/mark', {
+      const response = await fetch(`https://cafm.zenapi.co.in/api/attendance/${getEmployeeId()}/mark-with-photo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          employeeId: 'EFMS3295',
           photo: photoPreview,
           latitude: location.latitude,
           longitude: location.longitude,
@@ -317,8 +316,8 @@ function MarkAttendanceContent() {
 
       const data = await response.json();
 
-      if (data.success) {
-        setMarkAttendanceSuccess('Attendance marked successfully!');
+      if (response.ok && data.attendance) {
+        setMarkAttendanceSuccess(data.message || 'Attendance marked successfully!');
         setPhotoPreview(null);
       } else {
         throw new Error(data.message || 'Failed to mark attendance');

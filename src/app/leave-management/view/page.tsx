@@ -13,7 +13,7 @@ import {
   FaChartBar,
   FaInfoCircle
 } from 'react-icons/fa';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
@@ -28,7 +28,7 @@ interface LeaveBalance {
   pending: number;
 }
 
-interface LeaveBalances {
+interface LeaveBalanceResponse {
   employeeId: string;
   employeeName: string;
   year: number;
@@ -71,11 +71,11 @@ const ErrorMessage = ({ message, onRetry }: { message: string; onRetry: () => vo
   </div>
 );
 
-function ViewLeaveContent() {
+function LeaveViewContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [leaveBalances, setLeaveBalances] = useState<LeaveBalances | null>(null);
+  const [leaveBalance, setLeaveBalance] = useState<LeaveBalanceResponse | null>(null);
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
   const [viewType, setViewType] = useState<'chart' | 'table'>('chart');
 
@@ -84,24 +84,30 @@ function ViewLeaveContent() {
       router.push('/login');
       return;
     }
-    fetchLeaveBalances();
+    fetchLeaveBalance();
   }, [router]);
 
-  const fetchLeaveBalances = async () => {
+  const fetchLeaveBalance = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('https://cafm.zenapi.co.in/api/leave/balance/EFMS3295');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch leave balances');
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('Employee ID not found. Please login again.');
       }
 
-      setLeaveBalances(data);
+      const response = await fetch(`https://cafm.zenapi.co.in/api/leave/balance/${employeeId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch leave balance');
+      }
+
+      setLeaveBalance(data);
     } catch (error: any) {
-      setError(error.message || 'An error occurred while fetching leave balances');
+      setError(error.message || 'Failed to fetch leave balance');
+      setLeaveBalance(null);
     } finally {
       setLoading(false);
     }
@@ -112,13 +118,13 @@ function ViewLeaveContent() {
       case 'EL': return 'Earned Leave';
       case 'SL': return 'Sick Leave';
       case 'CL': return 'Casual Leave';
-      case 'CompOff': return 'Compensatory Off';
+      case 'CompOff': return 'Comp Off';
       default: return type;
     }
   };
 
   const renderCharts = () => {
-    if (!leaveBalances) return null;
+    if (!leaveBalance) return null;
 
     type Balance = {
       allocated: number;
@@ -131,9 +137,9 @@ function ViewLeaveContent() {
       labels: ['Used', 'Remaining', 'Pending'],
       datasets: [{
         data: [
-          leaveBalances.totalUsed,
-          leaveBalances.totalRemaining,
-          leaveBalances.totalPending
+          leaveBalance.totalUsed,
+          leaveBalance.totalRemaining,
+          leaveBalance.totalPending
         ],
         backgroundColor: [
           'rgba(244, 63, 94, 0.9)',  // Rose red
@@ -159,11 +165,11 @@ function ViewLeaveContent() {
     };
 
     const barData = {
-      labels: Object.keys(leaveBalances.balances).map(getLeaveTypeLabel),
+      labels: Object.keys(leaveBalance.balances).map(getLeaveTypeLabel),
       datasets: [
         {
           label: 'Allocated',
-          data: Object.values(leaveBalances.balances).map((b: Balance) => b.allocated),
+          data: Object.values(leaveBalance.balances).map((b: Balance) => b.allocated),
           backgroundColor: 'rgba(99, 102, 241, 0.9)',
           borderColor: 'rgba(99, 102, 241, 1)',
           borderWidth: 2,
@@ -172,7 +178,7 @@ function ViewLeaveContent() {
         },
         {
           label: 'Used',
-          data: Object.values(leaveBalances.balances).map((b: Balance) => b.used),
+          data: Object.values(leaveBalance.balances).map((b: Balance) => b.used),
           backgroundColor: 'rgba(244, 63, 94, 0.9)',
           borderColor: 'rgba(244, 63, 94, 1)',
           borderWidth: 2,
@@ -181,7 +187,7 @@ function ViewLeaveContent() {
         },
         {
           label: 'Remaining',
-          data: Object.values(leaveBalances.balances).map((b: Balance) => b.remaining),
+          data: Object.values(leaveBalance.balances).map((b: Balance) => b.remaining),
           backgroundColor: 'rgba(16, 185, 129, 0.9)',
           borderColor: 'rgba(16, 185, 129, 1)',
           borderWidth: 2,
@@ -320,7 +326,7 @@ function ViewLeaveContent() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
                 <div className="text-3xl font-bold text-gray-900">
-                  {leaveBalances.totalAllocated}
+                  {leaveBalance.totalAllocated}
                 </div>
                 <div className="text-sm font-medium text-gray-500">
                   Total Days
@@ -336,7 +342,7 @@ function ViewLeaveContent() {
   };
 
   const renderLeaveTypes = () => {
-    if (!leaveBalances) return null;
+    if (!leaveBalance) return null;
 
     return (
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden mt-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
@@ -367,7 +373,7 @@ function ViewLeaveContent() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {Object.entries(leaveBalances.balances).map(([type, balance]) => (
+              {Object.entries(leaveBalance.balances).map(([type, balance]) => (
                 <tr key={type} className="hover:bg-gray-50/80 transition-colors group">
                   <td className="px-8 py-6 whitespace-nowrap">
                     <div className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
@@ -413,16 +419,16 @@ function ViewLeaveContent() {
               <FaCalendarCheck className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Leave Balance Dashboard</h1>
-              <p className="text-blue-100 mt-1">Track and manage your leave allocations efficiently</p>
+              <h1 className="text-3xl font-bold">Leave Balance</h1>
+              <p className="text-blue-100 mt-1">View your leave allocation and usage</p>
             </div>
           </div>
           <button
-            onClick={fetchLeaveBalances}
-            className="p-3 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition-all duration-300"
-            title="Refresh Data"
+            onClick={fetchLeaveBalance}
+            className="p-2.5 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors rounded-lg"
+            title="Refresh"
           >
-            <FaSync className="w-6 h-6 hover:rotate-180 transition-transform duration-700" />
+            <FaSync className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -430,8 +436,8 @@ function ViewLeaveContent() {
       {loading ? (
         <LoadingSpinner />
       ) : error ? (
-        <ErrorMessage message={error} onRetry={fetchLeaveBalances} />
-      ) : leaveBalances ? (
+        <ErrorMessage message={error} onRetry={fetchLeaveBalance} />
+      ) : leaveBalance ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - Charts and Analytics */}
           <div className="lg:col-span-2 space-y-6">
@@ -532,7 +538,7 @@ function ViewLeaveContent() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {Object.entries(leaveBalances?.balances || {}).map(([type, balance], index) => (
+                        {Object.entries(leaveBalance?.balances || {}).map(([type, balance], index) => (
                           <tr 
                             key={type} 
                             className={`
@@ -627,7 +633,7 @@ function ViewLeaveContent() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Total Allocated</p>
-                    <p className="text-2xl font-bold text-blue-600">{leaveBalances?.totalAllocated}</p>
+                    <p className="text-2xl font-bold text-blue-600">{leaveBalance?.totalAllocated}</p>
                   </div>
                 </div>
               </div>
@@ -638,7 +644,7 @@ function ViewLeaveContent() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Available Balance</p>
-                    <p className="text-2xl font-bold text-green-600">{leaveBalances?.totalRemaining}</p>
+                    <p className="text-2xl font-bold text-green-600">{leaveBalance?.totalRemaining}</p>
                   </div>
                 </div>
               </div>
@@ -720,10 +726,10 @@ function ViewLeaveContent() {
   );
 }
 
-export default function ViewLeavePage() {
+export default function LeaveViewPage() {
   return (
     <DashboardLayout>
-      <ViewLeaveContent />
+      <LeaveViewContent />
     </DashboardLayout>
   );
 } 

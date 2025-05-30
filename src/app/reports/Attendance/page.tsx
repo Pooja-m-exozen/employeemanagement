@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AttendanceReport from '../components/AttendanceReport';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { getEmployeeId, isAuthenticated } from '@/services/auth';
 
 interface AttendanceRecord {
   _id: string;
@@ -22,11 +23,23 @@ const AttendancePage = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
+    fetchAttendanceData();
+  }, [selectedMonth, selectedYear, router]);
+
   const fetchAttendanceData = async () => {
     setLoading(true);
     try {
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('Employee ID not found. Please login again.');
+      }
       const response = await fetch(
-        `https://cafm.zenapi.co.in/api/attendance/report/monthly/employee?employeeId=EFMS3295&month=${selectedMonth}&year=${selectedYear}`
+        `https://cafm.zenapi.co.in/api/attendance/report/monthly/employee?employeeId=${employeeId}&month=${selectedMonth}&year=${selectedYear}`
       );
       const data = await response.json();
       
@@ -42,10 +55,6 @@ const AttendancePage = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchAttendanceData();
-  }, [selectedMonth, selectedYear]);
 
   const handleMonthChange = (month: number) => {
     setSelectedMonth(month);
@@ -68,7 +77,8 @@ const AttendancePage = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata',
     });
   };
 
@@ -77,7 +87,8 @@ const AttendancePage = () => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
+      timeZone: 'Asia/Kolkata',
     });
   };
 

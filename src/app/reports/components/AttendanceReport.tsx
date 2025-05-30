@@ -103,6 +103,18 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
 
   const stats = calculateStatistics();
 
+  // Utility to extract time from ISO string
+  const extractTime = (isoString: string) => {
+    if (!isoString) return 'N/A';
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Kolkata',
+    });
+  };
+
   return (
     <div className="space-y-6 bg-white rounded-xl shadow-sm p-6">
       {/* Header */}
@@ -135,7 +147,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
             <select
               value={selectedMonth}
               onChange={(e) => handleMonthChange(parseInt(e.target.value))}
-              className="pl-10 pr-4 py-2 border rounded-lg appearance-none bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="pl-10 pr-4 py-2 border rounded-lg appearance-none bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {months.map((month, index) => (
                 <option key={index + 1} value={index + 1}>{month}</option>
@@ -145,7 +157,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
           <select
             value={selectedYear}
             onChange={(e) => handleYearChange(parseInt(e.target.value))}
-            className="px-4 py-2 border rounded-lg appearance-none bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-4 py-2 border rounded-lg appearance-none bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             {years.map((year) => (
               <option key={year} value={year}>{year}</option>
@@ -168,22 +180,6 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
             <FaFilePdf className="w-4 h-4" />
             Export PDF
           </button>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-xl">
-          <div className="text-blue-600 text-sm font-medium">Total Days</div>
-          <div className="text-2xl font-bold text-blue-800">{stats.totalDays}</div>
-        </div>
-        <div className="bg-green-50 p-4 rounded-xl">
-          <div className="text-green-600 text-sm font-medium">Present Days</div>
-          <div className="text-2xl font-bold text-green-800">{stats.presentDays}</div>
-        </div>
-        <div className="bg-red-50 p-4 rounded-xl">
-          <div className="text-red-600 text-sm font-medium">Absent Days</div>
-          <div className="text-2xl font-bold text-red-800">{stats.absentDays}</div>
         </div>
       </div>
 
@@ -220,13 +216,13 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <FaClock className="text-gray-400" />
-                      {formatTime(record.punchInTime)}
+                      {extractTime(record.punchInTime)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <FaClock className="text-gray-400" />
-                      {formatTime(record.punchOutTime)}
+                      {extractTime(record.punchOutTime)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -240,7 +236,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button
-                      onClick={() => handleViewRecord(record)}
+                      onClick={() => setSelectedRecord(record)}
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
                       View Details
@@ -254,6 +250,60 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
       ) : (
         <div className="text-center py-12 bg-gray-50 rounded-xl">
           <p className="text-gray-500">No attendance records found for the selected period</p>
+        </div>
+      )}
+
+      {/* Modal for viewing record details */}
+      {selectedRecord && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full relative animate-fade-in">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl font-bold"
+              onClick={() => setSelectedRecord(null)}
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Attendance Record Details</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-medium text-gray-500">Date:</span>
+                <span className="text-gray-900">{formatDate(selectedRecord.date)}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-medium text-gray-500">Project Name:</span>
+                <span className="text-gray-900">{selectedRecord.projectName}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-medium text-gray-500">Designation:</span>
+                <span className="text-gray-900">{selectedRecord.designation}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-medium text-gray-500">Punch In Time:</span>
+                <span className="text-gray-900">{extractTime(selectedRecord.punchInTime)}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-medium text-gray-500">Punch Out Time:</span>
+                <span className="text-gray-900">{extractTime(selectedRecord.punchOutTime)}</span>
+              </div>
+              {selectedRecord.punchInPhoto && (
+                <div className="flex flex-col items-start border-b pb-2">
+                  <span className="font-medium text-gray-500 mb-1">Punch In Photo:</span>
+                  <img src={selectedRecord.punchInPhoto} alt="Punch In" className="rounded shadow max-h-40" />
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-500">Status:</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  selectedRecord.punchInTime && selectedRecord.punchOutTime
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {selectedRecord.punchInTime && selectedRecord.punchOutTime ? 'Present' : 'Absent'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

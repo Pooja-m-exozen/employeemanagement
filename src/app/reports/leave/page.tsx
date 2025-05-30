@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LeaveReport from '../components/LeaveReport';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { getEmployeeId } from '@/services/auth';
 
 interface LeaveBalance {
   EL: number;
@@ -45,7 +46,11 @@ const LeavePage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('https://cafm.zenapi.co.in/api/leave/history/EFMS3295');
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('Employee ID not found');
+      }
+      const response = await fetch(`https://cafm.zenapi.co.in/api/leave/history/${employeeId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch leave data');
       }
