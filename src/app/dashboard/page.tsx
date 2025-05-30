@@ -7,89 +7,18 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import { Pie, Bar } from 'react-chartjs-2';
 import AttendanceAnalytics from '@/components/dashboard/AttendanceAnalytics';
 import Confetti from 'react-confetti';
-import { useUser } from '@/context/UserContext';
+import { getDashboardData, getMonthlyStats, submitLeaveRequest, submitRegularization, uploadDocument, getLeaveBalance } from '@/services/dashboard';
+import { getEmployeeId } from '@/services/auth';
+import type { BirthdayResponse, WorkAnniversaryResponse, LeaveBalanceResponse, MonthlyStats, DepartmentStats, AnalyticsViewType, ChartType, LeaveType } from '../../types/dashboard';
+import { FaCalendarCheck, FaClipboardList, FaFileAlt, FaFileUpload, FaPlusCircle, FaRegCalendarPlus, FaTicketAlt, FaUserClock } from 'react-icons/fa';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
-
-type LeaveType = 'EL' | 'SL' | 'CL' | 'CompOff';
-type AnalyticsViewType = 'attendance' | 'leave';
-type ChartType = 'bar' | 'pie';
-
-interface MonthlyStats {
-  success: boolean;
-  message: string;
-  data?: {
-    presentDays: number;
-    absentDays: number;
-    lateArrivals: number;
-    earlyArrivals: number;
-    monthlyPresent?: number[];
-    monthlyAbsent?: number[];
-    monthlyLateArrivals?: number[];
-    monthlyEarlyArrivals?: number[];
-  };
-}
-
-interface BirthdayResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    fullName: string;
-    employeeId: string;
-    designation: string;
-    employeeImage: string;
-    personalizedWish: string;
-  }[];
-}
-
-interface WorkAnniversaryResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    fullName: string;
-    employeeId: string;
-    designation: string;
-    employeeImage: string;
-    yearsOfService: number;
-    personalizedWish: string;
-  }[];
-}
-
-interface LeaveBalance {
-  allocated: number;
-  used: number;
-  remaining: number;
-  pending: number;
-}
-
-interface LeaveBalances {
-  EL: LeaveBalance;
-  SL: LeaveBalance;
-  CL: LeaveBalance;
-  CompOff: LeaveBalance;
-}
-
-interface LeaveBalanceResponse {
-  employeeId: string;
-  employeeName: string;
-  year: number;
-  balances: LeaveBalances;
-  totalAllocated: number;
-  totalUsed: number;
-  totalRemaining: number;
-  totalPending: number;
-}
-
-interface EmployeeInfo {
-  employeeId: string;
-  fullName: string;
-  designation: string;
-  department: string;
-}
+// Register ChartJS components
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 export default function Dashboard() {
   const router = useRouter();
   const userDetails = useUser();
+  const employeeId = getEmployeeId();
   const [birthdays, setBirthdays] = useState<BirthdayResponse | null>(null);
   const [anniversaries, setAnniversaries] = useState<WorkAnniversaryResponse | null>(null);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalanceResponse | null>(null);
@@ -148,6 +77,11 @@ export default function Dashboard() {
   const [attendanceChartType, setAttendanceChartType] = useState<ChartType>('bar');
   const [leaveChartType, setLeaveChartType] = useState<ChartType>('bar');
 
+  // Department stats state
+  const [departmentStats, setDepartmentStats] = useState<DepartmentStats | null>(null);
+  const [departmentStatsLoading, setDepartmentStatsLoading] = useState(true);
+  const [departmentStatsError, setDepartmentStatsError] = useState<string | null>(null);
+
   // Ticket Form State
   const [ticketForm, setTicketForm] = useState({
     subject: '',
@@ -197,7 +131,7 @@ export default function Dashboard() {
         }
       } else {
         // Fetch monthly stats
-        const monthlyStatsData = await getMonthlyStats('EFMS3295', monthToFetch, yearToFetch);
+        const monthlyStatsData = await getMonthlyStats(employeeId || '', monthToFetch, yearToFetch);
         
         // Update monthly stats and cache
         setMonthlyStatsCache(prev => ({
@@ -211,11 +145,11 @@ export default function Dashboard() {
       }
 
       // Fetch leave balance
-      const leaveBalanceData = await getLeaveBalance('EFMS3295');
+      const leaveBalanceData = await getLeaveBalance(employeeId || '');
       setLeaveBalance(leaveBalanceData);
 
       // Fetch other dashboard data
-      const data = await getDashboardData('EFMS3295', monthToFetch, yearToFetch);
+      const data = await getDashboardData(employeeId || '', monthToFetch, yearToFetch);
       setBirthdays(data.birthdays);
       setAnniversaries(data.anniversaries);
       setAttendanceActivities(data.attendanceActivities);
@@ -228,9 +162,26 @@ export default function Dashboard() {
     }
   };
 
+  // Fetch department stats
+  const fetchDepartmentStats = async () => {
+    try {
+      setDepartmentStatsLoading(true);
+      const stats = await getDashboardData('DEPARTMENT_STATS_ENDPOINT', currentMonth, currentYear);
+      setDepartmentStats(stats as unknown as DepartmentStats);
+      setDepartmentStatsError(null);
+    } catch (error) {
+      console.error('Error fetching department stats:', error);
+      setDepartmentStatsError('Failed to fetch department statistics');
+      setDepartmentStats(null);
+    } finally {
+      setDepartmentStatsLoading(false);
+    }
+  };
+
   // Initial data fetch on component mount
   useEffect(() => {
     fetchData();
+    fetchDepartmentStats();
 
     // Poll every 5 minutes
     const pollInterval = setInterval(() => {
@@ -240,6 +191,18 @@ export default function Dashboard() {
 
     return () => clearInterval(pollInterval);
   }, []);
+
+  // Effect to update displayed monthly stats when currentMonth or currentYear changes
+  useEffect(() => {
+    if (currentMonth > 0) {
+      const monthYearKey = `${currentMonth}-${currentYear}`;
+      if (monthlyStatsCache[monthYearKey]) {
+        setMonthlyStats(monthlyStatsCache[monthYearKey]);
+      } else {
+        fetchData(false, currentMonth, currentYear);
+      }
+    }
+  }, [currentMonth, currentYear, monthlyStatsCache]);
 
   useEffect(() => {
     if (birthdays?.success && birthdays.data && birthdays.data.length > 0) {
@@ -677,6 +640,83 @@ export default function Dashboard() {
     );
   };
 
+  const renderDepartmentChart = () => {
+    if (!departmentStats?.data) return null;
+
+    const chartData: ChartData<'bar'> = {
+      labels: departmentStats.data.map(stat => stat.departmentName),
+      datasets: [
+        {
+          label: 'Total Employees',
+          data: departmentStats.data.map(stat => stat.totalEmployees),
+          backgroundColor: 'rgba(54, 162, 235, 0.6)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        },
+        {
+          label: 'Present Today',
+          data: departmentStats.data.map(stat => stat.presentToday),
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1,
+        },
+        {
+          label: 'On Leave Today',
+          data: departmentStats.data.map(stat => stat.onLeaveToday),
+          backgroundColor: 'rgba(255, 159, 64, 0.6)',
+          borderColor: 'rgba(255, 159, 64, 1)',
+          borderWidth: 1,
+        }
+      ]
+    };
+
+    const options: ChartOptions<'bar'> = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top' as const,
+        },
+        title: {
+          display: true,
+          text: 'Department-wise Employee Distribution',
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Employees'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Departments'
+          }
+        }
+      },
+    };
+
+    return (
+      <div className="bg-white rounded-lg shadow p-4">
+        <h3 className="text-lg font-semibold mb-4">Department Statistics</h3>
+        {departmentStatsLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : departmentStatsError ? (
+          <div className="text-red-500 text-center py-4">{departmentStatsError}</div>
+        ) : (
+          <div className="h-[400px]">
+            <Bar data={chartData} options={options} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderChart = () => {
     if (analyticsView === 'attendance') {
       return renderAttendanceChart();
@@ -756,7 +796,7 @@ export default function Dashboard() {
     setRequestError(null);
     setRequestSuccess(null);
     try {
-      await submitLeaveRequest(userDetails?.employeeId, leaveRequestForm);
+      await submitLeaveRequest(employeeId || '', leaveRequestForm);
       setRequestSuccess('Leave request submitted successfully!');
       setLeaveRequestForm({
         leaveType: '',
@@ -788,7 +828,7 @@ export default function Dashboard() {
     setRegularizationError(null);
     setRegularizationSuccess(null);
     try {
-      await submitRegularization(userDetails?.employeeId, regularizationForm);
+      await submitRegularization(employeeId || '', regularizationForm);
       setRegularizationSuccess('Attendance regularization request submitted successfully!');
       setRegularizationForm({ date: '', punchInTime: '', punchOutTime: '', reason: '', status: 'Present' });
       setTimeout(() => setShowRegularizationModal(false), 1500);
@@ -806,7 +846,7 @@ export default function Dashboard() {
     setUploadSuccess(null);
     try {
       if (!uploadFile) throw new Error('Please select a file');
-      await uploadDocument(userDetails?.employeeId, uploadFile, uploadType, uploadDesc);
+      await uploadDocument(employeeId || '', uploadFile, uploadType, uploadDesc);
       setUploadSuccess('Document uploaded successfully!');
       setUploadFile(null);
       setUploadType('');

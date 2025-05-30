@@ -80,13 +80,28 @@ interface KYCResponse {
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(' ');
 }
 
+export default function ViewKYC() {
 export default function ViewKYC() {
   const router = useRouter();
   const [kycResponse, setKYCResponse] = useState<KYCResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [activeSection, setActiveSection] = useState('personal');
+  const [completionStatus, setCompletionStatus] = useState({
+    personal: false,
+    address: false,
+    bank: false,
+    emergency: false,
+    documents: false
+  });
+  const [showQuickNav, setShowQuickNav] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState(0);
   const [showInstructions, setShowInstructions] = useState(true);
@@ -106,8 +121,10 @@ export default function ViewKYC() {
       return;
     }
     fetchKYCData();
+    fetchKYCData();
   }, [router]);
 
+  const fetchKYCData = async () => {
   const fetchKYCData = async () => {
     try {
       const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295');
@@ -119,10 +136,22 @@ export default function ViewKYC() {
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to fetch KYC data');
     } finally {
+      setError(error instanceof Error ? error.message : 'Failed to fetch KYC data');
+    } finally {
       setLoading(false);
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return 'bg-green-50 text-green-700 ring-green-600/20';
+      case 'pending':
+        return 'bg-yellow-50 text-yellow-700 ring-yellow-600/20';
+      case 'rejected':
+        return 'bg-red-50 text-red-700 ring-red-600/20';
+      default:
+        return 'bg-gray-50 text-gray-700 ring-gray-600/20';
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -253,6 +282,10 @@ export default function ViewKYC() {
         <div className="animate-spin text-blue-600">
           <FaSpinner className="w-12 h-12" />
         </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin text-blue-600">
+          <FaSpinner className="w-12 h-12" />
+        </div>
       </div>
     );
   }
@@ -263,13 +296,22 @@ export default function ViewKYC() {
         <div className="bg-red-50 text-red-600 p-6 rounded-2xl flex items-center gap-3 max-w-lg w-full shadow-lg">
           <FaTimesCircle className="w-6 h-6 flex-shrink-0" />
           <p className="text-lg font-medium">{error}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-red-50 text-red-600 p-6 rounded-2xl flex items-center gap-3 max-w-lg w-full shadow-lg">
+          <FaTimesCircle className="w-6 h-6 flex-shrink-0" />
+          <p className="text-lg font-medium">{error}</p>
         </div>
       </div>
     );
   }
 
   if (!kycResponse?.kycData) {
+  if (!kycResponse?.kycData) {
     return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-yellow-50 text-yellow-600 p-6 rounded-2xl flex items-center gap-3 max-w-lg w-full shadow-lg">
+          <FaExclamationCircle className="w-6 h-6 flex-shrink-0" />
+          <p className="text-lg font-medium">No KYC data available</p>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-yellow-50 text-yellow-600 p-6 rounded-2xl flex items-center gap-3 max-w-lg w-full shadow-lg">
           <FaExclamationCircle className="w-6 h-6 flex-shrink-0" />
