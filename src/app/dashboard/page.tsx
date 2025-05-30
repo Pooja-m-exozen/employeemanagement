@@ -10,7 +10,7 @@ import Confetti from 'react-confetti';
 import { getDashboardData, getMonthlyStats, submitLeaveRequest, submitRegularization, uploadDocument, getLeaveBalance } from '@/services/dashboard';
 import { getEmployeeId } from '@/services/auth';
 import type { BirthdayResponse, WorkAnniversaryResponse, LeaveBalanceResponse, MonthlyStats, DepartmentStats, AnalyticsViewType, ChartType, LeaveType } from '../../types/dashboard';
-import { FaCalendarCheck, FaClipboardList, FaFileAlt, FaFileUpload, FaPlusCircle, FaRegCalendarPlus, FaTicketAlt, FaUserClock } from 'react-icons/fa';
+import { FaCalendarCheck, FaClipboardList, FaFileAlt, FaFileUpload, FaPlusCircle, FaRegCalendarPlus, FaTicketAlt, FaUserClock, FaClipboardCheck } from 'react-icons/fa';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -928,8 +928,6 @@ export default function Dashboard() {
             <p className="text-base md:text-lg font-medium opacity-90 mt-1">
               {getWelcomeMessage()}
             </p>
-            {/* Optionally, you can add a subtitle or ticket info here */}
-            {/* <p className="text-sm opacity-80">You have 3 tickets that need your attention today</p> */}
           </div>
           <div className="flex gap-2 z-10">
             <button className="bg-white text-blue-600 px-4 py-2 rounded-lg shadow-md hover:bg-blue-50 transition font-semibold text-base">View My Tickets</button>
@@ -938,114 +936,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
-        <button
-          className="px-5 py-2.5 bg-white text-indigo-600 rounded-lg hover:bg-blue-50 transition-all duration-300 font-medium text-sm shadow-md hover:shadow-lg flex items-center gap-2 transform hover:-translate-y-1"
-        >
-          <FaTicketAlt className="text-indigo-500" /> View My Tickets
-        </button>
-        <button
-          onClick={handleViewReports}
-          className="px-5 py-2.5 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-300 font-medium text-sm shadow-md hover:shadow-lg border border-white/30 flex items-center gap-2 transform hover:-translate-y-1"
-        >
-          <FaFileAlt className="text-white/80" /> View Reports
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 p-4 mb-8">
-  {/* Reusable Card Component */}
-  {[
-    {
-      title: "Attendance",
-      subtitle: "This Month",
-      icon: <FaUserClock className="text-blue-600 text-2xl" />,
-      bgFrom: "from-blue-50",
-      bgTo: "to-blue-100",
-      value: "18 / 22",
-      label: "Present / Working Days",
-      progress: "82%",
-      progressColor: "bg-blue-500",
-      footerText: "+2 days vs last month",
-      borderColor: "border-blue-200",
-      hoverBg: "hover:bg-blue-50"
-    },
-    {
-      title: "Leave Balance",
-      icon: <FaCalendarCheck className="text-emerald-600 text-2xl" />,
-      bgFrom: "from-emerald-50",
-      bgTo: "to-emerald-100",
-      value: "12 / 20",
-      label: "Used / Allocated",
-      progress: "60%",
-      progressColor: "bg-emerald-500",
-      footerText: "8 days remaining",
-      borderColor: "border-emerald-200",
-      hoverBg: "hover:bg-emerald-50"
-    },
-    {
-      title: "Attendance Regularization",
-      icon: <FaClipboardList className="text-amber-600 text-2xl" />,
-      bgFrom: "from-amber-50",
-      bgTo: "to-amber-100",
-      value: "15 / 03 / 01",
-      label: "Requested / Approved / Rejected",
-      progress: "60%",
-      progressColor: "bg-amber-500",
-      footerText: "8 days remaining",
-      borderColor: "border-amber-200",
-      hoverBg: "hover:bg-amber-50"
-    },
-    {
-      title: "Leave",
-      subtitle: "This Month",
-      icon: <FaClipboardCheck className="text-purple-600 text-2xl" />,
-      bgFrom: "from-purple-50",
-      bgTo: "to-purple-100",
-      value: "2",
-      label: "Approved",
-      progress: "82%",
-      progressColor: "bg-purple-500",
-      footerText: "1 request pending",
-      borderColor: "border-purple-200",
-      hoverBg: "hover:bg-purple-50"
-    },
-  ].map((card, index) => (
-    <div
-      key={index}
-      className={`group bg-white rounded-xl p-6 shadow-sm hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border ${card.borderColor} ${card.hoverBg}`}
-    >
-      <div className="flex flex-col items-center text-center space-y-4">
-        <div className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} shadow-md p-4 rounded-full transform group-hover:scale-110 transition-transform duration-300`}>
-          {card.icon}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500">{card.title}</p>
-          {card.subtitle && <h3 className="text-base font-semibold text-gray-700">{card.subtitle}</h3>}
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{card.value}</h2>
-          <p className="text-xs text-gray-500">{card.label}</p>
-        </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${card.progressColor} transition-all rounded-full group-hover:animate-pulse`}
-            style={{ width: card.progress }}
-          />
-        </div>
-        <p className="text-xs font-medium text-gray-500 mt-1">{card.footerText}</p>
-      </div>
-    </div>
-  ))}
-</div>
-
       {/* Quick Actions */}
       <div className="mb-6">
         <h2 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
-           Quick Actions
+          Quick Actions
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <button 

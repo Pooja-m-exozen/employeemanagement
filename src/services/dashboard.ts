@@ -11,6 +11,22 @@ import type {
 
 const BASE_URL = 'https://cafm.zenapi.co.in/api';
 
+const handleResponse = async (response: Response) => {
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    // If the response is not JSON, try to get the text for better error reporting
+    const text = await response.text();
+    throw new Error(`Expected JSON response but got ${contentType}. Server response: ${text.substring(0, 200)}...`);
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 export const getDashboardData = async (
   employeeId: string,
   month?: number,
@@ -24,8 +40,7 @@ export const getDashboardData = async (
 }> => {
   try {
     const response = await fetch(`/api/dashboard?employeeId=${employeeId}&month=${month}&year=${year}`);
-    const data = await response.json();
-    return data;
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
     throw error;
@@ -39,13 +54,14 @@ export const getMonthlyStats = async (
 ): Promise<MonthlyStats> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/attendance/${employeeId}/monthly-stats?month=${month}&year=${year}`
+      `${BASE_URL}/attendance/${employeeId}/monthly-stats?month=${month}&year=${year}`,
+      {
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
     );
-    if (!response.ok) {
-      throw new Error('Failed to fetch monthly stats');
-    }
-    const data = await response.json();
-    return data;
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error fetching monthly stats:', error);
     throw error;
@@ -58,45 +74,55 @@ export const submitLeaveRequest = async (employeeId: string, leaveData: LeaveReq
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({ employeeId, ...leaveData }),
     });
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error submitting leave request:', error);
     throw error;
   }
 };
 
-export const submitRegularization = async (employeeId: string, regularizationData: RegularizationForm) => {
+export const submitRegularization = async (employeeId: string, data: RegularizationForm) => {
   try {
-    const response = await fetch('/api/regularization', {
+    const response = await fetch(`${BASE_URL}/attendance/regularize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-      body: JSON.stringify({ employeeId, ...regularizationData }),
+      body: JSON.stringify({ employeeId, ...data }),
     });
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error submitting regularization:', error);
     throw error;
   }
 };
 
-export const uploadDocument = async (employeeId: string, file: File, type: string, description: string): Promise<DocumentUploadResponse> => {
+export const uploadDocument = async (
+  employeeId: string,
+  file: File,
+  type: string,
+  description: string
+): Promise<DocumentUploadResponse> => {
   try {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('employeeId', employeeId);
     formData.append('type', type);
     formData.append('description', description);
-    formData.append('employeeId', employeeId);
 
-    const response = await fetch('/api/upload-document', {
+    const response = await fetch(`${BASE_URL}/documents/upload`, {
       method: 'POST',
+      headers: {
+        'Accept': 'application/json'
+      },
       body: formData,
     });
-    return await response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error uploading document:', error);
     throw error;
@@ -118,12 +144,12 @@ export const getDepartmentStats = async (): Promise<DepartmentStats> => {
 
 export const getLeaveBalance = async (employeeId: string): Promise<LeaveBalanceResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/leave/balance/${employeeId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch leave balance');
-    }
-    const data = await response.json();
-    return data;
+    const response = await fetch(`${BASE_URL}/leave/balance/${employeeId}`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error fetching leave balance:', error);
     throw error;
