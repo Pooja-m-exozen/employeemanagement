@@ -17,21 +17,40 @@ import {
   FaDownload,
   FaInfoCircle
 } from 'react-icons/fa';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
+interface LeaveBalance {
+  EL: number;
+  CL: number;
+  SL: number;
+  CompOff: number;
+}
+
 interface LeaveHistory {
-  id: string;
+  leaveId: string;
+  employeeName: string;
+  leaveType: string;
   startDate: string;
   endDate: string;
-  leaveType: string;
-  reason: string;
+  numberOfDays: number;
+  isHalfDay: boolean;
+  halfDayType: string | null;
   status: string;
+  reason: string;
+  emergencyContact: string;
+  attachments: any[];
   appliedOn: string;
-  approvedBy?: string;
-  approvedOn?: string;
-  remarks?: string;
+  lastUpdated: string;
+}
+
+interface LeaveHistoryResponse {
+  employeeId: string;
+  employeeName: string;
+  totalLeaves: number;
+  leaveBalances: LeaveBalance;
+  leaveHistory: LeaveHistory[];
 }
 
 // Enhanced feedback messages with animation
@@ -68,6 +87,17 @@ const getStatusBadgeClass = (status: string) => {
   }
 };
 
+// Leave Type Label Helper
+const getLeaveTypeLabel = (type: string) => {
+  switch (type) {
+    case 'EL': return 'Earned Leave';
+    case 'SL': return 'Sick Leave';
+    case 'CL': return 'Casual Leave';
+    case 'CompOff': return 'Comp Off';
+    default: return type;
+  }
+};
+
 // Leave Details Modal
 const LeaveDetailsModal = ({ leave, onClose }: { leave: LeaveHistory; onClose: () => void }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -84,7 +114,7 @@ const LeaveDetailsModal = ({ leave, onClose }: { leave: LeaveHistory; onClose: (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h4 className="text-sm font-medium text-gray-500">Leave Type</h4>
-            <p className="mt-1 text-base font-medium text-gray-900">{leave.leaveType}</p>
+            <p className="mt-1 text-base font-medium text-gray-900">{getLeaveTypeLabel(leave.leaveType)}</p>
           </div>
           <div>
             <h4 className="text-sm font-medium text-gray-500">Status</h4>
@@ -99,7 +129,16 @@ const LeaveDetailsModal = ({ leave, onClose }: { leave: LeaveHistory; onClose: (
             <p className="mt-1 text-base text-gray-900 flex items-center gap-2">
               <FaCalendarAlt className="text-gray-400" />
               {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+              {leave.isHalfDay && (
+                <span className="ml-2 text-sm text-gray-500">
+                  ({leave.halfDayType} Half)
+                </span>
+              )}
             </p>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-gray-500">Number of Days</h4>
+            <p className="mt-1 text-base text-gray-900">{leave.numberOfDays} day{leave.numberOfDays > 1 ? 's' : ''}</p>
           </div>
           <div>
             <h4 className="text-sm font-medium text-gray-500">Applied On</h4>
@@ -108,23 +147,15 @@ const LeaveDetailsModal = ({ leave, onClose }: { leave: LeaveHistory; onClose: (
               {new Date(leave.appliedOn).toLocaleDateString()}
             </p>
           </div>
+          <div>
+            <h4 className="text-sm font-medium text-gray-500">Emergency Contact</h4>
+            <p className="mt-1 text-base text-gray-900">{leave.emergencyContact}</p>
+          </div>
         </div>
         <div>
           <h4 className="text-sm font-medium text-gray-500">Reason</h4>
           <p className="mt-1 text-base text-gray-900">{leave.reason}</p>
         </div>
-        {leave.approvedBy && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-500">Approved By</h4>
-            <p className="mt-1 text-base text-gray-900">{leave.approvedBy}</p>
-          </div>
-        )}
-        {leave.remarks && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-500">Remarks</h4>
-            <p className="mt-1 text-base text-gray-900">{leave.remarks}</p>
-          </div>
-        )}
       </div>
       <div className="p-6 border-t border-gray-200 bg-gray-50">
         <button
@@ -142,7 +173,7 @@ function LeaveHistoryContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
+  const [leaveData, setLeaveData] = useState<LeaveHistoryResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
@@ -162,43 +193,22 @@ function LeaveHistoryContent() {
       setLoading(true);
       setError(null);
 
-      // For development, use mock data
-      if (process.env.NODE_ENV === 'development') {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-        const mockHistory: LeaveHistory[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `LEAVE${i + 1}`,
-          startDate: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          endDate: new Date(Date.now() - (i * 7 - 2) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          leaveType: ['Annual Leave', 'Sick Leave', 'Personal Leave'][Math.floor(Math.random() * 3)],
-          reason: 'Personal commitments and family event',
-          status: ['Pending', 'Approved', 'Rejected'][Math.floor(Math.random() * 3)],
-          appliedOn: new Date(Date.now() - (i * 7 + 2) * 24 * 60 * 60 * 1000).toISOString(),
-          approvedBy: 'John Manager',
-          approvedOn: new Date(Date.now() - (i * 7 + 1) * 24 * 60 * 60 * 1000).toISOString(),
-          remarks: 'Approved as per policy'
-        }));
-        setLeaveHistory(mockHistory);
-        return;
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('Employee ID not found. Please login again.');
       }
 
-      const response = await fetch('https://cafm.zenapi.co.in/api/leave/EFMS3295/history');
+      const response = await fetch(`https://cafm.zenapi.co.in/api/leave/history/${employeeId}`);
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch leave history');
       }
 
-      if (data.success && Array.isArray(data.history)) {
-        setLeaveHistory(data.history);
-      } else {
-        setLeaveHistory([]);
-        if (!data.success) {
-          throw new Error(data.message || 'Failed to fetch leave history');
-        }
-      }
+      setLeaveData(data);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch leave history');
-      setLeaveHistory([]);
+      setLeaveData(null);
     } finally {
       setLoading(false);
     }
@@ -227,16 +237,16 @@ function LeaveHistoryContent() {
     }
   };
 
-  const filteredHistory = getDateFilteredHistory(leaveHistory).filter(item => {
+  const filteredHistory = leaveData ? getDateFilteredHistory(leaveData.leaveHistory).filter(item => {
     const matchesSearch = searchQuery === '' || 
-      item.leaveType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getLeaveTypeLabel(item.leaveType).toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.reason.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.status.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || item.status.toLowerCase() === statusFilter.toLowerCase();
     
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -276,6 +286,25 @@ function LeaveHistoryContent() {
           </div>
         </div>
       </div>
+
+      {/* Leave Balance Cards */}
+      {leaveData && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Object.entries(leaveData.leaveBalances).map(([type, balance]) => (
+            <div key={type} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">{getLeaveTypeLabel(type)}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{balance}</p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <FaCalendarAlt className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Filters Section */}
       {showFilters && (
@@ -416,16 +445,21 @@ function LeaveHistoryContent() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredHistory.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50 transition-colors">
+                {filteredHistory.map((item) => (
+                  <tr key={item.leaveId} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.leaveType}</div>
+                      <div className="text-sm font-medium text-gray-900">{getLeaveTypeLabel(item.leaveType)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <div className="flex items-center gap-1">
                           <FaCalendarAlt className="w-3 h-3 text-gray-400" />
                           {new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}
+                          {item.isHalfDay && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({item.halfDayType} Half)
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>

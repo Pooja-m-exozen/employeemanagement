@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FaUpload, FaSpinner, FaCheckCircle, FaTimesCircle, FaFileAlt, FaExclamationCircle, FaInfoCircle, FaArrowLeft, FaIdCard, FaIdBadge, FaPassport, FaUserCircle, FaQuestionCircle } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DocumentUpload {
@@ -96,6 +96,12 @@ export default function UploadDocuments() {
     const doc = documents[type];
     if (!doc.file) return;
 
+    const employeeId = getEmployeeId();
+    if (!employeeId) {
+      setGlobalError('Employee ID not found. Please login again.');
+      return;
+    }
+
     setDocuments(prev => ({
       ...prev,
       [type]: { ...prev[type], uploading: true, error: null }
@@ -106,7 +112,7 @@ export default function UploadDocuments() {
       formData.append('file', doc.file);
       formData.append('type', type);
 
-      const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295/upload-document', {
+      const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}/upload-document`, {
         method: 'POST',
         body: formData
       });

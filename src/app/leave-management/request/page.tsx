@@ -14,7 +14,7 @@ import {
   FaTrash,
   FaClock
 } from 'react-icons/fa';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
@@ -23,7 +23,24 @@ interface LeaveRequest {
   endDate: string;
   leaveType: string;
   reason: string;
+  isHalfDay: boolean;
+  halfDayType: string | null;
+  emergencyContact: string;
   attachments?: File[];
+}
+
+interface LeaveBalance {
+  EL: number;
+  CL: number;
+  SL: number;
+  CompOff: number;
+}
+
+interface LeaveBalanceResponse {
+  employeeId: string;
+  employeeName: string;
+  totalLeaves: number;
+  leaveBalances: LeaveBalance;
 }
 
 // Enhanced feedback messages with animation
@@ -41,11 +58,15 @@ function RequestLeaveContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [leaveBalances, setLeaveBalances] = useState<LeaveBalance | null>(null);
   const [leaveRequest, setLeaveRequest] = useState<LeaveRequest>({
     startDate: '',
     endDate: '',
-    leaveType: 'Earned Leave',
+    leaveType: 'EL',
     reason: '',
+    isHalfDay: false,
+    halfDayType: null,
+    emergencyContact: '',
     attachments: []
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -56,6 +77,7 @@ function RequestLeaveContent() {
       router.push('/login');
       return;
     }
+    fetchLeaveBalances();
   }, [router]);
 
   useEffect(() => {
@@ -70,6 +92,26 @@ function RequestLeaveContent() {
     }
   }, [leaveRequest.startDate, leaveRequest.endDate]);
 
+  const fetchLeaveBalances = async () => {
+    try {
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('Employee ID not found. Please login again.');
+      }
+
+      const response = await fetch(`https://cafm.zenapi.co.in/api/leave/history/${employeeId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch leave balances');
+      }
+
+      setLeaveBalances(data.leaveBalances);
+    } catch (error: any) {
+      console.error('Error fetching leave balances:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -77,41 +119,36 @@ function RequestLeaveContent() {
     setSuccess(null);
 
     try {
-      // For development, simulate API call
-      if (process.env.NODE_ENV === 'development') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setSuccess('Leave request submitted successfully!');
-        setLeaveRequest({
-          startDate: '',
-          endDate: '',
-          leaveType: 'Earned Leave',
-          reason: '',
-          attachments: []
-        });
-        setSelectedFiles([]);
-        return;
-      }
-
+      // Prepare the request body as per API
+      const requestBody = {
+        employeeId: getEmployeeId(),
+        leaveType: leaveRequest.leaveType,
+        startDate: leaveRequest.startDate,
+        endDate: leaveRequest.endDate,
+        reason: leaveRequest.reason,
+        isHalfDay: leaveRequest.isHalfDay,
+        halfDayType: leaveRequest.halfDayType,
+        emergencyContact: leaveRequest.emergencyContact,
+        attachments: [] // handle attachments if needed
+      };
       const response = await fetch('https://cafm.zenapi.co.in/api/leave/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          employeeId: 'EFMS3295',
-          ...leaveRequest,
-        }),
+        body: JSON.stringify(requestBody),
       });
-
       const data = await response.json();
-
-      if (data.success) {
+      if (data.message && data.leave) {
         setSuccess('Leave request submitted successfully!');
         setLeaveRequest({
           startDate: '',
           endDate: '',
-          leaveType: 'Earned Leave',
+          leaveType: 'EL',
           reason: '',
+          isHalfDay: false,
+          halfDayType: null,
+          emergencyContact: '',
           attachments: []
         });
         setSelectedFiles([]);
@@ -165,6 +202,30 @@ function RequestLeaveContent() {
         </div>
       </div>
 
+      {/* Leave Balance Cards */}
+      {leaveBalances && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Object.entries(leaveBalances).map(([type, balance]) => (
+            <div key={type} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">
+                    {type === 'EL' ? 'Earned Leave' :
+                     type === 'SL' ? 'Sick Leave' :
+                     type === 'CL' ? 'Casual Leave' :
+                     'Comp Off'}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{balance}</p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <FaCalendarAlt className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Form Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -185,7 +246,7 @@ function RequestLeaveContent() {
                       onChange={handleInputChange}
                       required
                       min={new Date().toISOString().split('T')[0]}
-                      className="pl-10 w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="pl-10 w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                     />
                   </div>
                 </div>
@@ -204,123 +265,168 @@ function RequestLeaveContent() {
                       onChange={handleInputChange}
                       required
                       min={leaveRequest.startDate || new Date().toISOString().split('T')[0]}
-                      className="pl-10 w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="pl-10 w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                     />
                   </div>
                 </div>
-              </div>
 
-              {daysCount > 0 && (
-                <div className="bg-blue-50 rounded-lg p-4 flex items-center gap-3">
-                  <FaInfoCircle className="text-blue-600" />
-                  <p className="text-sm text-blue-700">
-                    Duration: <span className="font-semibold">{daysCount} day{daysCount > 1 ? 's' : ''}</span>
-                  </p>
+                {daysCount > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-4 flex items-center gap-3">
+                    <FaInfoCircle className="text-blue-600" />
+                    <p className="text-sm text-blue-700">
+                      Duration: <span className="font-semibold">{daysCount} day{daysCount > 1 ? 's' : ''}</span>
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="leaveType" className="block text-sm font-medium text-gray-700 mb-2">
+                    Leave Type
+                  </label>
+                  <select
+                    id="leaveType"
+                    name="leaveType"
+                    value={leaveRequest.leaveType}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                  >
+                    <option value="EL">Earned Leave</option>
+                    <option value="SL">Sick Leave</option>
+                    <option value="CL">Casual Leave</option>
+                    <option value="CompOff">Comp Off</option>
+                  </select>
                 </div>
-              )}
 
-              <div>
-                <label htmlFor="leaveType" className="block text-sm font-medium text-gray-700 mb-2">
-                  Leave Type
-                </label>
-                <select
-                  id="leaveType"
-                  name="leaveType"
-                  value={leaveRequest.leaveType}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="Earned Leave">Earned Leave</option>
-                  <option value="Sick Leave">Sick Leave</option>
-                  <option value="Casual Leave">Casual Leave</option>
-                  <option value="Comp Off">Comp Off</option>
-                </select>
-              </div>
+                <div>
+                  <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for Leave
+                  </label>
+                  <textarea
+                    id="reason"
+                    name="reason"
+                    value={leaveRequest.reason}
+                    onChange={handleInputChange}
+                    required
+                    rows={4}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                    placeholder="Please provide a detailed reason for your leave request..."
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for Leave
-                </label>
-                <textarea
-                  id="reason"
-                  name="reason"
-                  value={leaveRequest.reason}
-                  onChange={handleInputChange}
-                  required
-                  rows={4}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Please provide a detailed reason for your leave request..."
-                />
-              </div>
+                <div>
+                  <label htmlFor="isHalfDay" className="block text-sm font-medium text-gray-700 mb-2">Is Half Day?</label>
+                  <select
+                    id="isHalfDay"
+                    name="isHalfDay"
+                    value={leaveRequest.isHalfDay ? 'true' : 'false'}
+                    onChange={e => setLeaveRequest(prev => ({ ...prev, isHalfDay: e.target.value === 'true' }))}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                  >
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Attachments (Optional)
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors cursor-pointer">
-                  <div className="space-y-1 text-center">
-                    <FaUpload className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600">
-                      <label htmlFor="attachments" className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
-                        <span>Upload files</span>
-                        <input
-                          id="attachments"
-                          name="attachments"
-                          type="file"
-                          multiple
-                          onChange={handleFileChange}
-                          className="sr-only"
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
+                {leaveRequest.isHalfDay && (
+                  <div>
+                    <label htmlFor="halfDayType" className="block text-sm font-medium text-gray-700 mb-2">Half Day Type</label>
+                    <select
+                      id="halfDayType"
+                      name="halfDayType"
+                      value={leaveRequest.halfDayType || ''}
+                      onChange={e => setLeaveRequest(prev => ({ ...prev, halfDayType: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                    >
+                      <option value="">Select Type</option>
+                      <option value="First Half">First Half</option>
+                      <option value="Second Half">Second Half</option>
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="emergencyContact" className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
+                  <input
+                    type="text"
+                    id="emergencyContact"
+                    name="emergencyContact"
+                    value={leaveRequest.emergencyContact}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                    placeholder="Enter emergency contact number"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Attachments (Optional)
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors cursor-pointer">
+                    <div className="space-y-1 text-center">
+                      <FaUpload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <label htmlFor="attachments" className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
+                          <span>Upload files</span>
+                          <input
+                            id="attachments"
+                            name="attachments"
+                            type="file"
+                            multiple
+                            onChange={handleFileChange}
+                            className="sr-only"
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PDF, PNG, JPG up to 10MB each</p>
                     </div>
-                    <p className="text-xs text-gray-500">PDF, PNG, JPG up to 10MB each</p>
                   </div>
                 </div>
-              </div>
 
-              {selectedFiles.length > 0 && (
-                <div className="space-y-2">
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <FaFileAlt className="text-gray-400" />
-                        <span className="text-sm text-gray-600">{file.name}</span>
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FaFileAlt className="text-gray-400" />
+                          <span className="text-sm text-gray-600">{file.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <FaTrash className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(index)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <FaTrash className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+
+                {error && <FeedbackMessage message={error} type="error" />}
+                {success && <FeedbackMessage message={success} type="success" />}
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  >
+                    {loading ? (
+                      <>
+                        <FaSpinner className="w-4 h-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <FaCheck className="w-4 h-4" />
+                        Submit Request
+                      </>
+                    )}
+                  </button>
                 </div>
-              )}
-
-              {error && <FeedbackMessage message={error} type="error" />}
-              {success && <FeedbackMessage message={success} type="success" />}
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                >
-                  {loading ? (
-                    <>
-                      <FaSpinner className="w-4 h-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck className="w-4 h-4" />
-                      Submit Request
-                    </>
-                  )}
-                </button>
               </div>
             </form>
           </div>
