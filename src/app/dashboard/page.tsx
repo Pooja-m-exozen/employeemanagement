@@ -1,14 +1,34 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FaBirthdayCake, FaTrophy, FaCalendarCheck, FaUserClock, FaProjectDiagram, FaClipboardList, FaFileAlt, FaPlusCircle, FaFileUpload, FaRegCalendarPlus, FaTicketAlt } from 'react-icons/fa';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartOptions } from 'chart.js';
+import { useRouter } from 'next/navigation';
+import { FaBirthdayCake, FaTrophy, FaCalendarCheck, FaUserClock, FaProjectDiagram, FaClipboardList, FaFileAlt, FaPlusCircle, FaFileUpload, FaRegCalendarPlus, FaTicketAlt, FaClipboardCheck } from 'react-icons/fa';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartOptions, ChartData } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import AttendanceAnalytics from '@/components/dashboard/AttendanceAnalytics';
 import Confetti from 'react-confetti';
 import { useUser } from '@/context/UserContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+
+type LeaveType = 'EL' | 'SL' | 'CL' | 'CompOff';
+type AnalyticsViewType = 'attendance' | 'leave';
+type ChartType = 'bar' | 'pie';
+
+interface MonthlyStats {
+  success: boolean;
+  message: string;
+  data?: {
+    presentDays: number;
+    absentDays: number;
+    lateArrivals: number;
+    earlyArrivals: number;
+    monthlyPresent?: number[];
+    monthlyAbsent?: number[];
+    monthlyLateArrivals?: number[];
+    monthlyEarlyArrivals?: number[];
+  };
+}
 
 interface BirthdayResponse {
   success: boolean;
@@ -853,6 +873,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
       {/* Welcome Section */}
       <div className="mt-0 mb-5">
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-3 shadow flex flex-col md:flex-row md:items-center md:justify-between gap-3 relative overflow-hidden text-white">
@@ -902,95 +923,93 @@ export default function Dashboard() {
           <FaFileAlt className="text-white/80" /> View Reports
         </button>
       </div>
-    </div>
-  </div>
-</div>
 
-<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 p-4 mb-8">
-  {/* Reusable Card Component */}
-  {[
-    {
-      title: "Attendance",
-      subtitle: "This Month",
-      icon: <FaUserClock className="text-blue-600 text-2xl" />,
-      bgFrom: "from-blue-50",
-      bgTo: "to-blue-100",
-      value: "18 / 22",
-      label: "Present / Working Days",
-      progress: "82%",
-      progressColor: "bg-blue-500",
-      footerText: "+2 days vs last month",
-      borderColor: "border-blue-200",
-      hoverBg: "hover:bg-blue-50"
-    },
-    {
-      title: "Leave Balance",
-      icon: <FaCalendarCheck className="text-emerald-600 text-2xl" />,
-      bgFrom: "from-emerald-50",
-      bgTo: "to-emerald-100",
-      value: "12 / 20",
-      label: "Used / Allocated",
-      progress: "60%",
-      progressColor: "bg-emerald-500",
-      footerText: "8 days remaining",
-      borderColor: "border-emerald-200",
-      hoverBg: "hover:bg-emerald-50"
-    },
-    {
-      title: "Attendance Regularization",
-      icon: <FaClipboardList className="text-amber-600 text-2xl" />,
-      bgFrom: "from-amber-50",
-      bgTo: "to-amber-100",
-      value: "15 / 03 / 01",
-      label: "Requested / Approved / Rejected",
-      progress: "60%",
-      progressColor: "bg-amber-500",
-      footerText: "8 days remaining",
-      borderColor: "border-amber-200",
-      hoverBg: "hover:bg-amber-50"
-    },
-    {
-      title: "Leave",
-      subtitle: "This Month",
-      icon: <FaClipboardCheck className="text-purple-600 text-2xl" />,
-      bgFrom: "from-purple-50",
-      bgTo: "to-purple-100",
-      value: "2",
-      label: "Approved",
-      progress: "82%",
-      progressColor: "bg-purple-500",
-      footerText: "1 request pending",
-      borderColor: "border-purple-200",
-      hoverBg: "hover:bg-purple-50"
-    },
-  ].map((card, index) => (
-    <div
-      key={index}
-      className={`group bg-white rounded-xl p-6 shadow-sm hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border ${card.borderColor} ${card.hoverBg}`}
-    >
-      <div className="flex flex-col items-center text-center space-y-4">
-        <div className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} shadow-md p-4 rounded-full transform group-hover:scale-110 transition-transform duration-300`}>
-          {card.icon}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500">{card.title}</p>
-          {card.subtitle && <h3 className="text-base font-semibold text-gray-700">{card.subtitle}</h3>}
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{card.value}</h2>
-          <p className="text-xs text-gray-500">{card.label}</p>
-        </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 p-4 mb-8">
+        {/* Reusable Card Component */}
+        {[
+          {
+            title: "Attendance",
+            subtitle: "This Month",
+            icon: <FaUserClock className="text-blue-600 text-2xl" />,
+            bgFrom: "from-blue-50",
+            bgTo: "to-blue-100",
+            value: "18 / 22",
+            label: "Present / Working Days",
+            progress: "82%",
+            progressColor: "bg-blue-500",
+            footerText: "+2 days vs last month",
+            borderColor: "border-blue-200",
+            hoverBg: "hover:bg-blue-50"
+          },
+          {
+            title: "Leave Balance",
+            icon: <FaCalendarCheck className="text-emerald-600 text-2xl" />,
+            bgFrom: "from-emerald-50",
+            bgTo: "to-emerald-100",
+            value: "12 / 20",
+            label: "Used / Allocated",
+            progress: "60%",
+            progressColor: "bg-emerald-500",
+            footerText: "8 days remaining",
+            borderColor: "border-emerald-200",
+            hoverBg: "hover:bg-emerald-50"
+          },
+          {
+            title: "Attendance Regularization",
+            icon: <FaClipboardList className="text-amber-600 text-2xl" />,
+            bgFrom: "from-amber-50",
+            bgTo: "to-amber-100",
+            value: "15 / 03 / 01",
+            label: "Requested / Approved / Rejected",
+            progress: "60%",
+            progressColor: "bg-amber-500",
+            footerText: "8 days remaining",
+            borderColor: "border-amber-200",
+            hoverBg: "hover:bg-amber-50"
+          },
+          {
+            title: "Leave",
+            subtitle: "This Month",
+            icon: <FaClipboardCheck className="text-purple-600 text-2xl" />,
+            bgFrom: "from-purple-50",
+            bgTo: "to-purple-100",
+            value: "2",
+            label: "Approved",
+            progress: "82%",
+            progressColor: "bg-purple-500",
+            footerText: "1 request pending",
+            borderColor: "border-purple-200",
+            hoverBg: "hover:bg-purple-50"
+          },
+        ].map((card, index) => (
           <div
-            className={`h-full ${card.progressColor} transition-all rounded-full group-hover:animate-pulse`}
-            style={{ width: card.progress }}
-          />
-        </div>
-        <p className="text-xs font-medium text-gray-500 mt-1">{card.footerText}</p>
+            key={index}
+            className={`group bg-white rounded-xl p-6 shadow-sm hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border ${card.borderColor} ${card.hoverBg}`}
+          >
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} shadow-md p-4 rounded-full transform group-hover:scale-110 transition-transform duration-300`}>
+                {card.icon}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">{card.title}</p>
+                {card.subtitle && <h3 className="text-base font-semibold text-gray-700">{card.subtitle}</h3>}
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{card.value}</h2>
+                <p className="text-xs text-gray-500">{card.label}</p>
+              </div>
+              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${card.progressColor} transition-all rounded-full group-hover:animate-pulse`}
+                  style={{ width: card.progress }}
+                />
+              </div>
+              <p className="text-xs font-medium text-gray-500 mt-1">{card.footerText}</p>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
-  ))}
-</div>
 
       {/* Quick Actions */}
       <div className="mb-6">
@@ -1075,10 +1094,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Leave Balance Section (consolidated into Analytics) */}
-      {/* Attendance Analytics (consolidated into Analytics) */}
-
-      {/* Modals (scaffolded) */}
+      {/* Modals */}
       {showLeaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md border border-gray-200 animate-fade-in-up">
@@ -1272,7 +1288,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-    
     </div>
   );
 }
