@@ -1,19 +1,10 @@
 'use client';
 
-<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import type { ChartData, ChartOptions } from 'chart.js';
-=======
-import React, { useState, useEffect } from 'react';
-import { FaCalendarCheck, FaUserClock,FaClipboardList, FaFileAlt, FaPlusCircle, FaFileUpload, FaRegCalendarPlus, FaTicketAlt, FaClipboardCheck } from 'react-icons/fa';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartOptions } from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
-import Confetti from 'react-confetti';
-import { useRouter } from 'next/navigation';
->>>>>>> d3398b49d26e41a2e364ad4291af7da5a52ca999
 import { useUser } from '@/context/UserContext';
 import Confetti from 'react-confetti';
 import { getDashboardData, getMonthlyStats, submitLeaveRequest, submitRegularization, uploadDocument, getLeaveBalance } from '@/services/dashboard';
@@ -21,63 +12,8 @@ import { getEmployeeId } from '@/services/auth';
 import type { BirthdayResponse, WorkAnniversaryResponse, LeaveBalanceResponse, MonthlyStats, DepartmentStats, AnalyticsViewType, ChartType, LeaveType } from '../../types/dashboard';
 import { FaCalendarCheck, FaClipboardList, FaFileAlt, FaFileUpload, FaPlusCircle, FaRegCalendarPlus, FaTicketAlt, FaUserClock } from 'react-icons/fa';
 
-<<<<<<< HEAD
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
-=======
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
-
-interface BirthdayResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    fullName: string;
-    employeeId: string;
-    designation: string;
-    employeeImage: string;
-    personalizedWish: string;
-  }[];
-}
-
-interface WorkAnniversaryResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    fullName: string;
-    employeeId: string;
-    designation: string;
-    employeeImage: string;
-    yearsOfService: number;
-    personalizedWish: string;
-  }[];
-}
-
-interface LeaveBalance {
-  allocated: number;
-  used: number;
-  remaining: number;
-  pending: number;
-}
-
-interface LeaveBalances {
-  EL: LeaveBalance;
-  SL: LeaveBalance;
-  CL: LeaveBalance;
-  CompOff: LeaveBalance;
-}
-
-interface LeaveBalanceResponse {
-  employeeId: string;
-  employeeName: string;
-  year: number;
-  balances: LeaveBalances;
-  totalAllocated: number;
-  totalUsed: number;
-  totalRemaining: number;
-  totalPending: number;
-}
-
->>>>>>> d3398b49d26e41a2e364ad4291af7da5a52ca999
 
 export default function Dashboard() {
   const router = useRouter();
@@ -101,6 +37,13 @@ export default function Dashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showRegularizationModal, setShowRegularizationModal] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [leaveType, setLeaveType] = useState('EL');
+  const [leaveFrom, setLeaveFrom] = useState('');
+  const [leaveTo, setLeaveTo] = useState('');
+  const [leaveReason, setLeaveReason] = useState('');
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [leaveSuccess, setLeaveSuccess] = useState('');
+  const [leaveError, setLeaveError] = useState('');
   const [leaveRequestForm, setLeaveRequestForm] = useState({
     leaveType: '',
     startDate: '',
@@ -163,6 +106,13 @@ export default function Dashboard() {
     }, 60000);
     return () => clearInterval(timer);
   }, []);
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
   const getWelcomeMessage = () => {
     const day = currentTime.getDay();
@@ -287,7 +237,6 @@ export default function Dashboard() {
     </div>
   );
 
-<<<<<<< HEAD
   const RefreshButton = () => (
     <button
       onClick={() => {
@@ -321,8 +270,6 @@ export default function Dashboard() {
     </button>
   );
 
-=======
->>>>>>> d3398b49d26e41a2e364ad4291af7da5a52ca999
   // Colors for leave types
   const leaveColors = {
     EL: {
@@ -986,7 +933,6 @@ export default function Dashboard() {
         </div>
       )}
       {/* Welcome Section */}
-<<<<<<< HEAD
       <div className="mt-0 mb-5">
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative overflow-hidden text-white">
           <div className="space-y-1 z-10">
@@ -1002,194 +948,113 @@ export default function Dashboard() {
           <div className="flex gap-2 z-10">
             <button className="bg-white text-blue-600 px-4 py-2 rounded-lg shadow-md hover:bg-blue-50 transition font-semibold text-base">View My Tickets</button>
             <button onClick={handleViewReports} className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition font-semibold text-base">View Reports</button>
-=======
-      <div className="container mx-auto px-0 pt-0 mt-0 mb-8">
-  <div className="bg-gradient-to-r from-indigo-600 via-blue-500 to-purple-600 rounded-2xl shadow-lg overflow-hidden">
-    <div className="flex flex-col md:flex-row justify-between items-center p-8 gap-6">
-      {/* Welcome Message */}
-      <div className="text-center md:text-left">
-        <div className="flex items-center gap-3 mb-2">
-          <div>
-            <h2 className="text-3xl font-bold text-white">
-              Welcome back,{" "}
-              <span className="text-blue-100 font-extrabold">
-                {userDetails?.fullName || (
-                  <span className="inline-block h-5 w-28 bg-blue-300 rounded animate-pulse align-middle">&nbsp;</span>
-                )}
-              </span>
-            </h2>
-            <p className="text-blue-100 mt-2 text-lg">{getWelcomeMessage()}</p>
->>>>>>> d3398b49d26e41a2e364ad4291af7da5a52ca999
           </div>
         </div>
-        {userDetails && (
-          <p className="text-white text-sm font-medium bg-white/20 px-4 py-2 rounded-full inline-block mt-3 backdrop-blur-md border border-white/30 shadow-inner">
-            {userDetails.designation} • {userDetails.department}
-          </p>
-        )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
-        <button
-          className="px-5 py-2.5 bg-white text-indigo-600 rounded-lg hover:bg-blue-50 transition-all duration-300 font-medium text-sm shadow-md hover:shadow-lg flex items-center gap-2 transform hover:-translate-y-1"
-        >
-          <FaTicketAlt className="text-indigo-500" /> View My Tickets
-        </button>
-        <button
-          onClick={handleViewReports}
-          className="px-5 py-2.5 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-300 font-medium text-sm shadow-md hover:shadow-lg border border-white/30 flex items-center gap-2 transform hover:-translate-y-1"
-        >
-          <FaFileAlt className="text-white/80" /> View Reports
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="bg-white rounded-2xl shadow-lg px-5 py-3 transition-transform duration-200 hover:scale-105 hover:shadow-2xl border border-gray-100 group">
+          <div className="flex items-center justify-between mb-1">
+            <div className="p-2 rounded-full bg-gradient-to-br from-blue-100 to-blue-300 group-hover:from-blue-200 group-hover:to-blue-400 transition">
+              <FaUserClock className="text-xl text-blue-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-400">This Month</span>
+          </div>
+          <div className="mt-1">
+            <h3 className="text-2xl font-extrabold text-gray-900 tracking-tight">18/22</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Present Days / Working Days</p>
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+              <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-500" style={{ width: '82%' }}></div>
+            </div>
+            <p className="text-xs text-green-600 font-semibold mt-1">+2 days from last month</p>
+          </div>
+        </div>
 
-<<<<<<< HEAD
+        <div className="bg-white rounded-2xl px-5 py-3 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-emerald-50 rounded-xl">
+              <FaCalendarCheck className="text-xl text-emerald-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-500">Leave Balance</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-2xl font-bold text-gray-800">12/20</h3>
+            <p className="text-xs text-gray-600">Used / Total Allocated</p>
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: '60%' }}></div>
+            </div>
+            <p className="text-xs text-emerald-600 font-medium">8 days remaining</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl px-5 py-3 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-amber-50 rounded-xl">
+              <FaClipboardList className="text-xl text-amber-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-500">Attendance Regulation</span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">15</h3>
+                <p className="text-xs text-gray-600">Approved</p>
+              </div>
+              <div className="h-8 w-px bg-gray-200"></div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">3</h3>
+                <p className="text-xs text-gray-600">Rejected</p>
+              </div>
+            </div>
+            <p className="text-xs text-amber-600 font-medium">2 pending approval</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl px-5 py-3 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-purple-50 rounded-xl">
+              <FaFileAlt className="text-xl text-purple-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-500">Leave Requests</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-2xl font-bold text-gray-800">5</h3>
+            <p className="text-xs text-gray-600">Pending Requests</p>
+            <div className="flex items-center gap-1.5">
+              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">2 Urgent</span>
+              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">3 Regular</span>
+            </div>
+            <p className="text-xs text-purple-600 font-medium">3 requests this week</p>
+          </div>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div className="mb-6">
         <h2 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
            Quick Actions
-=======
-<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 p-4 mb-8">
-  {/* Reusable Card Component */}
-  {[
-    {
-      title: "Attendance",
-      subtitle: "This Month",
-      icon: <FaUserClock className="text-blue-600 text-2xl" />,
-      bgFrom: "from-blue-50",
-      bgTo: "to-blue-100",
-      value: "18 / 22",
-      label: "Present / Working Days",
-      progress: "82%",
-      progressColor: "bg-blue-500",
-      footerText: "+2 days vs last month",
-      borderColor: "border-blue-200",
-      hoverBg: "hover:bg-blue-50"
-    },
-    {
-      title: "Leave Balance",
-      icon: <FaCalendarCheck className="text-emerald-600 text-2xl" />,
-      bgFrom: "from-emerald-50",
-      bgTo: "to-emerald-100",
-      value: "12 / 20",
-      label: "Used / Allocated",
-      progress: "60%",
-      progressColor: "bg-emerald-500",
-      footerText: "8 days remaining",
-      borderColor: "border-emerald-200",
-      hoverBg: "hover:bg-emerald-50"
-    },
-    {
-      title: "Attendance Regularization",
-      icon: <FaClipboardList className="text-amber-600 text-2xl" />,
-      bgFrom: "from-amber-50",
-      bgTo: "to-amber-100",
-      value: "15 / 03 / 01",
-      label: "Requested / Approved / Rejected",
-      progress: "60%",
-      progressColor: "bg-amber-500",
-      footerText: "8 days remaining",
-      borderColor: "border-amber-200",
-      hoverBg: "hover:bg-amber-50"
-    },
-    {
-      title: "Leave",
-      subtitle: "This Month",
-      icon: <FaClipboardCheck className="text-purple-600 text-2xl" />,
-      bgFrom: "from-purple-50",
-      bgTo: "to-purple-100",
-      value: "2",
-      label: "Approved",
-      progress: "82%",
-      progressColor: "bg-purple-500",
-      footerText: "1 request pending",
-      borderColor: "border-purple-200",
-      hoverBg: "hover:bg-purple-50"
-    },
-  ].map((card, index) => (
-    <div
-      key={index}
-      className={`group bg-white rounded-xl p-6 shadow-sm hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border ${card.borderColor} ${card.hoverBg}`}
-    >
-      <div className="flex flex-col items-center text-center space-y-4">
-        <div className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} shadow-md p-4 rounded-full transform group-hover:scale-110 transition-transform duration-300`}>
-          {card.icon}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500">{card.title}</p>
-          {card.subtitle && <h3 className="text-base font-semibold text-gray-700">{card.subtitle}</h3>}
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{card.value}</h2>
-          <p className="text-xs text-gray-500">{card.label}</p>
-        </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${card.progressColor} transition-all rounded-full group-hover:animate-pulse`}
-            style={{ width: card.progress }}
-          />
-        </div>
-        <p className="text-xs font-medium text-gray-500 mt-1">{card.footerText}</p>
-      </div>
-    </div>
-  ))}
-</div>
-
-
-      {/* Quick Actions Section - New */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <span className="text-indigo-600">⚡</span> Quick Actions
->>>>>>> d3398b49d26e41a2e364ad4291af7da5a52ca999
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <button 
-            onClick={() => setShowLeaveModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-indigo-300 group"
-          >
-            <div className="p-3 rounded-full bg-indigo-100 text-indigo-600 mb-3 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <FaRegCalendarPlus className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Request Leave</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <button onClick={() => setShowLeaveModal(true)} className="bg-transparent hover:bg-gradient-to-r from-blue-500 to-indigo-600 text-gray-800 hover:text-white rounded-xl px-4 py-2 flex flex-col items-center shadow transition border border-gray-200 group">
+            <FaRegCalendarPlus className="text-lg mb-1 text-indigo-500 group-hover:text-white transition" />
+            <span className="font-medium text-xs">Request Leave</span>
           </button>
-          
-          <button 
-            onClick={() => setShowRegularizationModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-amber-300 group"
-          >
-            <div className="p-3 rounded-full bg-amber-100 text-amber-600 mb-3 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
-              <FaClipboardList className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-amber-600 transition-colors">Regularize Attendance</span>
+          <button onClick={() => setShowUploadModal(true)} className="bg-transparent hover:bg-gradient-to-r from-blue-500 to-indigo-600 text-gray-800 hover:text-white rounded-xl px-4 py-2 flex flex-col items-center shadow transition border border-gray-200 group">
+            <FaFileUpload className="text-lg mb-1 text-emerald-600 group-hover:text-white transition" />
+            <span className="font-medium text-xs">Upload Document</span>
           </button>
-          
-          <button 
-            onClick={() => setShowUploadModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-300 group"
-          >
-            <div className="p-3 rounded-full bg-emerald-100 text-emerald-600 mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-              <FaFileUpload className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">Upload Document</span>
+          <button onClick={() => setShowRegularizationModal(true)} className="bg-transparent hover:bg-gradient-to-r from-blue-500 to-indigo-600 text-gray-800 hover:text-white rounded-xl px-4 py-2 flex flex-col items-center shadow transition border border-gray-200 group">
+            <FaRegCalendarPlus className="text-lg mb-1 text-amber-600 group-hover:text-white transition" />
+            <span className="font-medium text-xs">Request Regularization</span>
           </button>
-          
-          <button 
-            onClick={() => setShowTicketModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-purple-300 group"
-          >
-            <div className="p-3 rounded-full bg-purple-100 text-purple-600 mb-3 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-              <FaTicketAlt className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-purple-600 transition-colors">Raise Ticket</span>
+          <button onClick={() => setShowTicketModal(true)} className="bg-transparent hover:bg-gradient-to-r from-blue-500 to-indigo-600 text-gray-800 hover:text-white rounded-xl px-4 py-2 flex flex-col items-center shadow transition border border-gray-200 group">
+            <FaTicketAlt className="text-lg mb-1 text-purple-600 group-hover:text-white transition" />
+            <span className="font-medium text-xs">Raise Ticket</span>
           </button>
         </div>
       </div>
 
-<<<<<<< HEAD
       {/* Dashboard Analytics Section */}
       <div className="mb-6 bg-white rounded-2xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
@@ -1207,43 +1072,12 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200">
            {/* View Toggles */}
            <div className="flex gap-3">
-=======
-      {/* Dashboard Analytics Section - Redesigned */}
-      <div className="mb-8 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-            <span className="text-2xl p-2 bg-indigo-100 text-indigo-600 rounded-lg">📈</span>
-            Dashboard Analytics
-          </h2>
-          <div className="flex items-center gap-3 mt-3 sm:mt-0">
-            {refreshing && <LoadingSpinner />}
->>>>>>> d3398b49d26e41a2e364ad4291af7da5a52ca999
             <button
-              onClick={() => {
-                setRefreshing(true);
-                fetchData(false);
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-600
-                rounded-full text-sm font-medium transition-all duration-300 hover:shadow-md
-                border border-gray-200 hover:border-gray-300"
-              disabled={refreshing}
+              onClick={() => setAnalyticsView('attendance')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${analyticsView === 'attendance' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
             >
-              <svg
-                className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              {refreshing ? 'Refreshing...' : 'Refresh'}
+              Attendance Analytics
             </button>
-<<<<<<< HEAD
             <button
               onClick={() => setAnalyticsView('leave')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${analyticsView === 'leave' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
@@ -1262,53 +1096,6 @@ export default function Dashboard() {
         {/* Chart Area */}
         <div className="relative w-full">
           {renderChart()}
-=======
-          </div>
-        </div>
-        
-        <div className="bg-gray-50 p-4 rounded-xl mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAnalyticsView('attendance')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${analyticsView === 'attendance' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
-              >
-                Attendance Analytics
-              </button>
-              <button
-                onClick={() => setAnalyticsView('leave')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${analyticsView === 'leave' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
-              >
-                Leave Analytics
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => analyticsView === 'attendance' ? setAttendanceChartType('bar') : setLeaveChartType('bar')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5 ${(analyticsView === 'attendance' ? attendanceChartType : leaveChartType) === 'bar' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5h-2v12h2V2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2zM6 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm-5 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3z"/>
-                </svg>
-                Bar
-              </button>
-              <button
-                onClick={() => analyticsView === 'attendance' ? setAttendanceChartType('pie') : setLeaveChartType('pie')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5 ${(analyticsView === 'attendance' ? attendanceChartType : leaveChartType) === 'pie' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M7.5 1.018a7 7 0 0 0-4.79 11.566L7.5 7.793V1.018zm1 0V7.5h6.482A7.001 7.001 0 0 0 8.5 1.018zM14.982 8.5H8.207l-4.79 4.79A7 7 0 0 0 14.982 8.5zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/>
-                </svg>
-                Pie
-              </button>
-            </div>
-          </div>
-          <div className="relative w-full h-[400px] max-w-3xl mx-auto bg-white p-4 rounded-lg shadow-sm">
-            <div className="w-full h-full">
-              {renderChart()}
-            </div>
-          </div>
->>>>>>> d3398b49d26e41a2e364ad4291af7da5a52ca999
         </div>
       </div>
 
@@ -1317,34 +1104,13 @@ export default function Dashboard() {
 
       {/* Modals (scaffolded) */}
       {showLeaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md border border-gray-200 animate-fade-in-up">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <span className="p-1.5 bg-indigo-100 text-indigo-600 rounded-md">
-                  <FaRegCalendarPlus className="text-lg" />
-                </span>
-                Request Leave
-              </h3>
-              <button 
-                onClick={() => setShowLeaveModal(false)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-                </svg>
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4 text-black">Request Leave</h3>
             <form onSubmit={handleSubmitLeaveRequest} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-700">Leave Type</label>
-                <select 
-                  name="leaveType" 
-                  value={leaveRequestForm.leaveType} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                  required
-                >
+                <label className="block text-sm font-medium mb-1 text-black">Leave Type</label>
+                <select name="leaveType" value={leaveRequestForm.leaveType} onChange={handleRequestLeaveChange} className="w-full border rounded px-3 py-2 text-black" required>
                   <option value="">Select Leave Type</option>
                   <option value="EL">Earned Leave</option>
                   <option value="SL">Sick Leave</option>
@@ -1352,47 +1118,21 @@ export default function Dashboard() {
                   <option value="CompOff">Comp Off</option>
                 </select>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1.5 text-gray-700">From</label>
-                  <input 
-                    type="date" 
-                    name="startDate" 
-                    value={leaveRequestForm.startDate} 
-                    onChange={handleRequestLeaveChange} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                    required 
-                  />
+                  <label className="block text-sm font-medium mb-1 text-black">From</label>
+                  <input type="date" name="startDate" value={leaveRequestForm.startDate} onChange={handleRequestLeaveChange} className="w-full border rounded px-3 py-2 text-black" required />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1.5 text-gray-700">To</label>
-                  <input 
-                    type="date" 
-                    name="endDate" 
-                    value={leaveRequestForm.endDate} 
-                    onChange={handleRequestLeaveChange} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                    required 
-                  />
+                  <label className="block text-sm font-medium mb-1 text-black">To</label>
+                  <input type="date" name="endDate" value={leaveRequestForm.endDate} onChange={handleRequestLeaveChange} className="w-full border rounded px-3 py-2 text-black" required />
                 </div>
               </div>
-              <div className="flex gap-2 items-center bg-gray-50 p-3 rounded-lg">
-                <input 
-                  type="checkbox" 
-                  id="isHalfDay"
-                  name="isHalfDay" 
-                  checked={leaveRequestForm.isHalfDay} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="isHalfDay" className="text-sm text-gray-700">Half Day</label>
+              <div className="flex gap-2 items-center">
+                <input type="checkbox" name="isHalfDay" checked={leaveRequestForm.isHalfDay} onChange={handleRequestLeaveChange} />
+                <label className="text-sm text-black">Half Day</label>
                 {leaveRequestForm.isHalfDay && (
-                  <select 
-                    name="halfDayType" 
-                    value={leaveRequestForm.halfDayType || ''} 
-                    onChange={handleRequestLeaveChange} 
-                    className="ml-2 border border-gray-300 rounded px-2 py-1 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
+                  <select name="halfDayType" value={leaveRequestForm.halfDayType || ''} onChange={handleRequestLeaveChange} className="ml-2 border rounded px-2 py-1 text-black">
                     <option value="">Select</option>
                     <option value="First Half">First Half</option>
                     <option value="Second Half">Second Half</option>
@@ -1400,50 +1140,18 @@ export default function Dashboard() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-700">Reason</label>
-                <textarea 
-                  name="reason" 
-                  value={leaveRequestForm.reason} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                  rows={3}
-                  required 
-                />
+                <label className="block text-sm font-medium mb-1 text-black">Reason</label>
+                <textarea name="reason" value={leaveRequestForm.reason} onChange={handleRequestLeaveChange} className="w-full border rounded px-3 py-2 text-black" required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-700">Emergency Contact</label>
-                <input 
-                  name="emergencyContact" 
-                  value={leaveRequestForm.emergencyContact} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                />
+                <label className="block text-sm font-medium mb-1 text-black">Emergency Contact</label>
+                <input name="emergencyContact" value={leaveRequestForm.emergencyContact} onChange={handleRequestLeaveChange} className="w-full border rounded px-3 py-2 text-black" />
               </div>
-              {requestError && <div className="text-red-600 text-sm p-2 bg-red-50 rounded-lg">{requestError}</div>}
-              {requestSuccess && <div className="text-green-600 text-sm p-2 bg-green-50 rounded-lg">{requestSuccess}</div>}
-              <div className="flex justify-end gap-3 pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setShowLeaveModal(false)} 
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2" 
-                  disabled={submittingRequest}
-                >
-                  {submittingRequest ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Submitting...
-                    </>
-                  ) : 'Submit Request'}
-                </button>
+              {requestError && <div className="text-red-600 text-sm">{requestError}</div>}
+              {requestSuccess && <div className="text-green-600 text-sm">{requestSuccess}</div>}
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setShowLeaveModal(false)} className="px-4 py-2 bg-red-500 text-white rounded">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-indigo-500 text-white rounded" disabled={submittingRequest}>{submittingRequest ? 'Submitting...' : 'Submit'}</button>
               </div>
             </form>
           </div>
