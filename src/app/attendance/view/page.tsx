@@ -152,92 +152,61 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Calendar Day Component
-const CalendarDay = ({ 
-  date, 
-  record,
-  isToday,
-  isCurrentMonth 
-}: { 
-  date: Date;
-  record?: AttendanceRecord;
-  isToday: boolean;
-  isCurrentMonth: boolean;
-}) => {
-  const getStatusColor = () => {
-    if (!isCurrentMonth) return 'text-gray-300';
-    if (!record) return 'text-gray-600';
-    
-    switch (record.status.toLowerCase()) {
-      case 'present':
-        return record.isLate 
-          ? 'text-amber-700'
-          : 'text-emerald-700';
-      case 'absent':
-        return 'text-red-700';
-      case 'holiday':
-        return 'text-blue-700';
-      default:
-        return 'text-gray-600';
-    }
-  };
+// Helper: format UTC time string as hh:mm AM/PM (no timezone conversion)
+function formatUtcTime(utcString: string | null): string | null {
+  if (!utcString) return null;
+  try {
+    const date = new Date(utcString);
+    // Get hours/minutes in UTC
+    let hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  } catch {
+    return null;
+  }
+}
 
-  const getStatusBackground = () => {
-    if (!isCurrentMonth || !record) return 'bg-white';
-    
-    switch (record.status.toLowerCase()) {
-      case 'present':
-        return record.isLate 
-          ? 'bg-amber-50'
-          : 'bg-emerald-50';
-      case 'absent':
-        return 'bg-red-50';
-      case 'holiday':
-        return 'bg-blue-50';
-      default:
-        return 'bg-white';
-    }
-  };
+// Helper: check if date is Sunday, 2nd/4th Saturday, or a government holiday
+const GOVT_HOLIDAYS = [
+  // Add government holiday dates as 'YYYY-MM-DD' strings
+  '2025-05-01', // Example: May Day
+  // ... add more as needed
+];
+function isHoliday(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const day = date.getDay(); // 0=Sunday, 6=Saturday
+  // Sundays
+  if (day === 0) return true;
+  // 2nd and 4th Saturdays
+  if (day === 6) {
+    const dayOfMonth = date.getDate();
+    const weekOfMonth = Math.ceil(dayOfMonth / 7);
+    if (weekOfMonth === 2 || weekOfMonth === 4) return true;
+  }
+  // Government holidays
+  if (GOVT_HOLIDAYS.includes(dateStr)) return true;
+  return false;
+}
 
-  const getStatusLabel = () => {
-    if (!record || !isCurrentMonth) return '';
-    
-    switch (record.status.toLowerCase()) {
-      case 'present':
-        return record.isLate ? 'Late' : 'Present';
-      case 'absent':
-        return 'Absent';
-      case 'holiday':
-        return 'Holiday';
-      default:
-        return '';
-    }
-  };
-
-  return (
-    <div 
-      className={`
-        relative h-16 p-2
-        ${isToday ? 'ring-2 ring-blue-400' : 'border border-gray-200'}
-        ${getStatusBackground()}
-        rounded-lg transition-all duration-200
-        ${record ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}
-        flex flex-col justify-between
-      `}
-    >
-      <div className="flex justify-between items-start">
-        <span className={`text-sm font-semibold ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}`}>
-          {format(date, 'd')}
-        </span>
-        {record && isCurrentMonth && (
-          <div className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getStatusColor()} bg-white/50`}>
-            {getStatusLabel()}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+// Helper to calculate hours worked from UTC times
+function calculateHoursUtc(punchInUtc: string | null, punchOutUtc: string | null): string {
+  if (!punchInUtc || !punchOutUtc) return '0';
+  try {
+    const inDate = new Date(punchInUtc);
+    const outDate = new Date(punchOutUtc);
+    // If punch out is before punch in (e.g., overnight), add 1 day
+    if (outDate < inDate) outDate.setUTCDate(outDate.getUTCDate() + 1);
+    const diffMs = outDate.getTime() - inDate.getTime();
+    const diffHrs = diffMs / (1000 * 60 * 60);
+    if (isNaN(diffHrs) || diffHrs < 0) return '0';
+    return diffHrs.toFixed(2);
+  } catch {
+    return '0';
+  }
+}
 
 function ViewAttendanceContent() {
   const router = useRouter();
@@ -258,26 +227,59 @@ function ViewAttendanceContent() {
       return;
     }
     fetchActivities();
-  }, [router]);
+  }, [router, selectedDate]);
 
   const fetchActivities = async () => {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const employeeId = getEmployeeId();
-      const response = await fetch(`https://cafm.zenapi.co.in/api/attendance/${employeeId}/recent-activities`);
+      const month = selectedDate.getMonth() + 1;
+      const year = selectedDate.getFullYear();
+      
+      const response = await fetch(`https://cafm.zenapi.co.in/api/attendance/report/monthly/employee?employeeId=${employeeId}&month=${month}&year=${year}`);
       const data = await response.json();
-      if (response.ok && data.status === 'success' && Array.isArray(data.data?.activities)) {
-        setActivities(data.data.activities);
-        } else {
+      
+      if (response.ok && data.attendance) {
+        // Transform API data to match our component's expected format
+        const transformedActivities = data.attendance.map((record: any) => {
+          const dateStr = record.date.split('T')[0];
+          let status = record.status;
+          if (isHoliday(dateStr)) status = 'Holiday';
+          return {
+            date: dateStr,
+            displayDate: format(new Date(record.date), 'EEE, MMM d, yyyy'),
+            status,
+            punchInTime: record.punchInTime ? formatUtcTime(record.punchInTime) : null,
+            punchOutTime: record.punchOutTime ? formatUtcTime(record.punchOutTime) : null,
+            punchInUtc: record.punchInTime || null,
+            punchOutUtc: record.punchOutTime || null,
+            punchInLocation: record.punchInLatitude && record.punchInLongitude ? {
+              latitude: record.punchInLatitude,
+              longitude: record.punchInLongitude
+            } : undefined,
+            punchOutLocation: record.punchOutLatitude && record.punchOutLongitude ? {
+              latitude: record.punchOutLatitude,
+              longitude: record.punchOutLongitude
+            } : undefined,
+            punchInPhoto: record.punchInPhoto,
+            punchOutPhoto: record.punchOutPhoto,
+            isLate: record.isLate || false,
+            remarks: record.remarks,
+            totalHoursWorked: calculateHoursUtc(record.punchInTime, record.punchOutTime)
+          };
+        });
+        
+        setActivities(transformedActivities);
+      } else {
         setActivities([]);
         setError('No attendance data found.');
-        }
+      }
     } catch (e) {
       setActivities([]);
       setError('Failed to fetch attendance data.');
-      }
-      setLoading(false);
+    }
+    setLoading(false);
   };
 
   const getCalendarDays = () => {
@@ -326,6 +328,52 @@ function ViewAttendanceContent() {
   const workingDays = activities.filter(a => a.status === 'Present' || a.status === 'Absent' || a.status.toLowerCase().includes('late')).length;
   const presentDays = activities.filter(a => a.status === 'Present').length;
   const attendanceRate = workingDays > 0 ? ((presentDays / workingDays) * 100).toFixed(2) : '0.00';
+
+  // Add Legend component
+  const AttendanceLegend = () => (
+    <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+      <h4 className="text-sm font-semibold text-gray-700 mb-2">Status Legend</h4>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-green-100 border border-green-300"></div>
+          <span className="text-sm text-gray-600">Present</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-amber-100 border border-amber-300"></div>
+          <span className="text-sm text-gray-600">Late</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-red-100 border border-red-300"></div>
+          <span className="text-sm text-gray-600">Absent</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-blue-100 border border-blue-300"></div>
+          <span className="text-sm text-gray-600">Holiday</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-purple-100 border border-purple-300"></div>
+          <span className="text-sm text-gray-600">Half Day</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const getDayBackgroundColor = (activity: any, isCurrentMonth: boolean) => {
+    if (!isCurrentMonth) return 'bg-gray-50';
+    if (!activity) return 'bg-white';
+    switch (activity.status.toLowerCase()) {
+      case 'present':
+        return activity.isLate ? 'bg-amber-100' : 'bg-green-100';
+      case 'absent':
+        return 'bg-red-100';
+      case 'holiday':
+        return 'bg-blue-100';
+      case 'half day':
+        return 'bg-purple-100';
+      default:
+        return 'bg-white';
+    }
+  };
 
     return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
@@ -412,14 +460,18 @@ function ViewAttendanceContent() {
                 return (
                   <div
                     key={idx}
-                    className={`relative w-14 h-14 border rounded-lg flex flex-col items-center justify-center shadow-sm transition
-                      ${isToday(date) ? 'ring-2 ring-blue-400 bg-blue-50' : ''}
-                      ${isSameMonth(date, selectedDate) ? 'bg-white' : 'bg-gray-50 opacity-60'}
-                      group`}
+                    className={`
+                      relative w-14 h-14 border rounded-lg flex flex-col items-center justify-center shadow-sm transition
+                      ${isToday(date) ? 'ring-2 ring-blue-400' : ''}
+                      ${isSameMonth(date, selectedDate) ? getDayBackgroundColor(activity, true) : 'bg-gray-50 opacity-60'}
+                      group
+                    `}
                     title={activity ? `${activity.status}${activity.time ? ' at ' + activity.time : ''}` : ''}
                   >
-                    <span className="text-xs text-gray-400 absolute top-1 left-1">{date ? format(date, 'd') : ''}</span>
-                    <span className={`mt-2 text-base font-bold ${color}`}>{code}</span>
+                    <span className="absolute top-1 left-1 text-xs text-gray-400">{date ? format(date, 'd') : ''}</span>
+                    <span className="mt-2 text-base font-bold text-gray-800">
+                      {code}
+                    </span>
                     {activity && activity.remarks && (
                       <span className="absolute bottom-1 left-1 text-[10px] text-amber-600" title={activity.remarks}>*</span>
                     )}
@@ -427,13 +479,17 @@ function ViewAttendanceContent() {
                 );
               })}
               </div>
-          </div>
+            
+            {/* Add Legend */}
+            <AttendanceLegend />
+            
                 <button
                   onClick={() => setShowDetailedRecordsModal(true)}
             className="mt-8 w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium shadow hover:from-blue-700 hover:to-indigo-700 transition-all"
                 >
             <FaClipboardCheck className="inline mr-2" /> View Detailed Report
                 </button>
+          </div>
               </div>
             </div>
       {/* Error or Loading */}
@@ -499,13 +555,13 @@ function ViewAttendanceContent() {
             <div className="overflow-x-auto rounded-xl">
           <table className="w-full">
                 <thead className="sticky top-0 bg-white z-10">
-                  <tr className="bg-gray-50">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><FaCalendarAlt className="inline mr-1 text-blue-500" /> Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><FaCheckCircle className="inline mr-1 text-green-500" /> Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><FaSignInAlt className="inline mr-1 text-emerald-500" /> Punch In</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><FaSignOutAlt className="inline mr-1 text-amber-500" /> Punch Out</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><FaClockIcon className="inline mr-1 text-indigo-500" /> Hours</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <tr className="bg-gray-100 border-b border-gray-200">
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaCalendarAlt className="inline mr-1 text-blue-500" /> Date</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaCheckCircle className="inline mr-1 text-green-500" /> Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaSignInAlt className="inline mr-1 text-emerald-500" /> Punch In</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaSignOutAlt className="inline mr-1 text-amber-500" /> Punch Out</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaClockIcon className="inline mr-1 text-indigo-500" /> Hours</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -516,64 +572,49 @@ function ViewAttendanceContent() {
                   ) : paginatedActivities.map((activity, idx) => {
                     const isTodayRow = activity.date === format(new Date(), 'yyyy-MM-dd');
                     return (
-                      <tr key={idx} className={`hover:bg-blue-50 transition ${isTodayRow ? 'ring-2 ring-blue-400 bg-blue-50' : ''}`}>
-                        <td className="px-6 py-4 whitespace-nowrap text-black">
-                        <div className="flex flex-col">
-                            <span className="font-bold text-lg text-black">{format(new Date(activity.date), 'dd')}</span>
-                            <span className="text-xs text-black font-medium uppercase">{format(new Date(activity.date), 'MMM')}</span>
-                            <span className="text-xs text-black">{format(new Date(activity.date), 'EEEE')}</span>
-                      </div>
-                    </td>
+                      <tr key={idx} className={`hover:bg-blue-50 transition-all duration-150 ${isTodayRow ? 'ring-2 ring-blue-400 bg-blue-50' : ''}`}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {activity.status.toLowerCase() === 'present' ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500 text-white gap-1">
-                              <FaCheckCircle className="w-4 h-4 mr-1" /> Present
+                          <div className="flex flex-col">
+                            <span className="font-bold text-lg text-black">{format(new Date(activity.date), 'dd')}</span>
+                            <span className="text-xs font-bold text-black uppercase">{format(new Date(activity.date), 'MMM')}</span>
+                            <span className="text-xs font-bold text-black">{format(new Date(activity.date), 'EEEE')}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {activity.status === 'Holiday' ? (
+                            <span className="text-blue-600 font-bold">Holiday</span>
+                          ) : (activity.punchInUtc && activity.punchOutUtc && activity.totalHoursWorked !== '0') ? (
+                            <span className="font-bold text-base text-black flex items-center gap-2">
+                              <FaClockIcon className="text-indigo-500" /> {activity.totalHoursWorked}
                             </span>
-                          ) : (
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                              activity.status.toLowerCase() === 'absent' ? 'bg-red-100 text-red-700' :
-                              activity.status.toLowerCase().includes('holiday') ? 'bg-blue-100 text-blue-700' :
-                              activity.status.toLowerCase().includes('late') ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {activity.status}
-                            </span>
-                          )}
-                    </td>
+                          ) : <span className="text-gray-400">-</span>}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {activity.punchInTime ? (
-                        <div className="flex flex-col gap-1.5">
-                              <span className="flex items-center gap-2"><FaSignInAlt className="text-emerald-500" /> {activity.punchInTime}</span>
-                              {activity.punchInLocation && (
-                                <span className="flex items-center gap-1 text-xs text-gray-500"><FaMapMarkerAlt className="w-3 h-3" />{activity.punchInLocation.latitude}, {activity.punchInLocation.longitude}</span>
-                          )}
-                        </div>
+                            <span className="font-bold text-base text-black">{activity.punchInTime}</span>
                           ) : <span className="text-gray-400">-</span>}
-                    </td>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {activity.punchOutTime ? (
-                        <div className="flex flex-col gap-1.5">
-                              <span className="flex items-center gap-2"><FaSignOutAlt className="text-amber-500" /> {activity.punchOutTime}</span>
-                              {activity.punchOutLocation && (
-                                <span className="flex items-center gap-1 text-xs text-gray-500"><FaMapMarkerAlt className="w-3 h-3" />{activity.punchOutLocation.latitude}, {activity.punchOutLocation.longitude}</span>
-                          )}
-                        </div>
+                            <span className="font-bold text-base text-black">{activity.punchOutTime}</span>
                           ) : <span className="text-gray-400">-</span>}
-                    </td>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {activity.totalHoursWorked ? (
-                            <span className="flex items-center gap-2"><FaClockIcon className="text-indigo-500" /> {activity.totalHoursWorked}</span>
+                          {activity.punchInTime && activity.punchOutTime ? (
+                            <span className="font-bold text-base text-black flex items-center gap-2">
+                              <FaClockIcon className="text-indigo-500" /> {calculateHoursUtc(activity.punchInUtc, activity.punchOutUtc)}
+                            </span>
                           ) : <span className="text-gray-400">-</span>}
-                    </td>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                      <button
+                          <button
                             onClick={() => setSelectedActivity(activity)}
                             className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition font-medium shadow-sm border border-blue-200"
                           >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
                     );
                   })}
             </tbody>
@@ -657,8 +698,12 @@ function ViewAttendanceContent() {
                       </span>
                     </div>
                   <div>
-                      <span className="block text-xs text-gray-500 mb-1">Time</span>
-                      <span className="font-medium text-gray-900">{selectedActivity.time || '-'}</span>
+                      <span className="block text-xs text-gray-500 mb-1">Punch In Time</span>
+                      <span className="font-medium text-gray-900">{selectedActivity.punchInTime || '-'}</span>
+                  </div>
+                <div>
+                      <span className="block text-xs text-gray-500 mb-1">Punch Out Time</span>
+                      <span className="font-medium text-gray-900">{selectedActivity.punchOutTime || '-'}</span>
                   </div>
                 <div>
                       <span className="block text-xs text-gray-500 mb-1">Late?</span>

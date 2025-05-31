@@ -649,20 +649,16 @@ export default function ViewKYC() {
 
           {/* Main Content */}
           <div className="p-4 lg:p-6">
-            {/* KYC Header - No top margin/padding */}
-            <div className="flex items-center justify-between mb-6 mt-0 pt-0">
-              <div className="flex items-center gap-3">
-                <FaIdCard className="w-6 h-6 text-indigo-600" />
-                <h1 className="text-2xl font-bold text-gray-900">KYC Management</h1>
+            {/* Modern KYC Header */}
+            <div className="rounded-2xl mb-8 p-6 flex items-center gap-5 bg-gradient-to-r from-blue-500 to-blue-800 shadow-lg">
+              <div className="bg-blue-600 bg-opacity-30 rounded-xl p-4 flex items-center justify-center">
+                <FaIdCard className="w-10 h-10 text-white" />
               </div>
-              <span className={classNames(
-                'px-3 py-1 rounded-full text-sm font-medium',
-                getStatusColor(kycData.status)
-              )}>
-                {kycData.status}
-              </span>
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-1">View KYC</h1>
+                <p className="text-white text-base opacity-90">View and manage your KYC verification details</p>
+              </div>
             </div>
-
             {/* Dynamic Content */}
             {showInstructions && <Instructions />}
             <ProgressBar />
@@ -827,8 +823,6 @@ export default function ViewKYC() {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* ... existing code ... */}
           </div>
         </div>
       </div>

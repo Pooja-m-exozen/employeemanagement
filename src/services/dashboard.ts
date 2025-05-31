@@ -129,3 +129,22 @@ export const getLeaveBalance = async (employeeId: string): Promise<LeaveBalanceR
     throw error;
   }
 };
+
+export const fetchDashboardSummary = async (
+  employeeId: string,
+  month: number,
+  year: number
+) => {
+  const [monthlyStats, leaveBalance, dashboardData] = await Promise.all([
+    getMonthlyStats(employeeId, month, year),
+    getLeaveBalance(employeeId),
+    getDashboardData(employeeId, month, year),
+  ]);
+  return {
+    monthlyStats,
+    leaveBalance,
+    birthdays: dashboardData.birthdays,
+    anniversaries: dashboardData.anniversaries,
+    attendanceActivities: dashboardData.attendanceActivities,
+  };
+};

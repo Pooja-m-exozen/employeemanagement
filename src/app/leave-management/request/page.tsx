@@ -409,23 +409,17 @@ function RequestLeaveContent() {
                 {success && <FeedbackMessage message={success} type="success" />}
 
                 <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                  >
-                    {loading ? (
-                      <>
-                        <FaSpinner className="w-4 h-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <FaCheck className="w-4 h-4" />
-                        Submit Request
-                      </>
-                    )}
-                  </button>
+                <button
+  type="submit"
+  disabled={loading}
+  className="bg-blue-500 text-white font-bold px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-600 disabled:opacity-50"
+>
+  <FaCheck className="w-3 h-3" />
+  Submit Request
+</button>
+
+
+
                 </div>
               </div>
             </form>
