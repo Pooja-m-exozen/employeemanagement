@@ -355,7 +355,7 @@ function ViewAttendanceContent() {
                     </div>
           <div className="text-center text-gray-500 mb-6">Attendance Rate</div>
           {/* Instructions */}
-          <div className="w-full bg-gray-50 rounded-lg p-4 border">
+          <div className="w-full bg-gray-50 rounded-lg">
             <h3 className="font-semibold text-gray-800 mb-2">Instructions & Notes</h3>
             <ul className="list-decimal list-inside text-sm text-gray-700 space-y-1">
               <li>Your attendance is automatically recorded when you punch in and out using the mobile app.</li>

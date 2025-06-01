@@ -225,7 +225,7 @@ const PayslipPage = () => {
                 <FaFileInvoiceDollar className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-black">Payslip Dashboard</h1>
+                <h1 className="text-3xl font-bold text-white">Payslip Dashboard</h1>
                 <p className="text-blue-100 mt-1">View and download your monthly salary details</p>
               </div>
             </div>

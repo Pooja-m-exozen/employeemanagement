@@ -752,55 +752,57 @@ export default function Dashboard() {
       {/* Quick Actions and Dashboard Analytics Section */}
       <div className="grid grid-cols-12 gap-6 mb-6 h-[calc(100vh-120px)]">
         {/* Quick Actions */}
-        <div className="col-span-12 lg:col-span-2 bg-white rounded-2xl shadow-lg p-4 overflow-y-auto">
-          <h2 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
-            Quick Actions
-          </h2>
-          <div className="flex flex-col gap-3">
-            <button 
+        <div className="col-span-12 lg:col-span-3 bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Quick Actions</h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Welcome! Use the quick actions below to manage your tasks efficiently.
+          </p>
+          <div className="space-y-4">
+            <div
               onClick={() => setShowLeaveModal(true)}
-              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-indigo-300 group"
+              className="group flex items-center gap-4 p-4 bg-indigo-500 text-white rounded-xl shadow-md hover:bg-indigo-600 active:bg-blue-500 transition-transform transform hover:scale-105 cursor-pointer"
             >
-              <div className="p-2 rounded-full bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                <FaRegCalendarPlus className="text-lg" />
+              <FaRegCalendarPlus className="text-3xl group-hover:scale-110 transition-transform" />
+              <div>
+                <h3 className="text-base font-semibold">Request Leave</h3>
+                <p className="text-sm opacity-80">Submit a leave request for approval.</p>
               </div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Leave</span>
-            </button>
-            
-            <button 
+            </div>
+            <div
               onClick={() => setShowRegularizationModal(true)}
-              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-amber-300 group"
+              className="group flex items-center gap-4 p-4 bg-amber-500 text-white rounded-xl shadow-md hover:bg-amber-600 active:bg-blue-500 transition-transform transform hover:scale-105 cursor-pointer"
             >
-              <div className="p-2 rounded-full bg-amber-100 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
-                <FaClipboardList className="text-lg" />
+              <FaClipboardList className="text-3xl group-hover:scale-110 transition-transform" />
+              <div>
+                <h3 className="text-base font-semibold">Attendance Regularization</h3>
+                <p className="text-sm opacity-80">Request corrections to your attendance.</p>
               </div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-amber-600 transition-colors">Attendance</span>
-            </button>
-            
-            <button 
+            </div>
+            <div
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-300 group"
+              className="group flex items-center gap-4 p-4 bg-emerald-500 text-white rounded-xl shadow-md hover:bg-emerald-600 active:bg-blue-500 transition-transform transform hover:scale-105 cursor-pointer"
             >
-              <div className="p-2 rounded-full bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-                <FaFileUpload className="text-lg" />
+              <FaFileUpload className="text-3xl group-hover:scale-110 transition-transform" />
+              <div>
+                <h3 className="text-base font-semibold">Upload Document</h3>
+                <p className="text-sm opacity-80">Upload important documents securely.</p>
               </div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">Document</span>
-            </button>
-            
-            <button 
+            </div>
+            <div
               onClick={() => setShowTicketModal(true)}
-              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-purple-300 group"
+              className="group flex items-center gap-4 p-4 bg-purple-500 text-white rounded-xl shadow-md hover:bg-purple-600 active:bg-blue-500 transition-transform transform hover:scale-105 cursor-pointer"
             >
-              <div className="p-2 rounded-full bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-                <FaTicketAlt className="text-lg" />
+              <FaTicketAlt className="text-3xl group-hover:scale-110 transition-transform" />
+              <div>
+                <h3 className="text-base font-semibold">Raise Ticket</h3>
+                <p className="text-sm opacity-80">Report an issue or request support.</p>
               </div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-purple-600 transition-colors">Raise Ticket</span>
-            </button>
+            </div>
           </div>
         </div>
 
         {/* Dashboard Analytics */}
-        <div className="col-span-12 lg:col-span-10 bg-white rounded-2xl shadow-lg p-4 overflow-y-auto max-h-[calc(100vh-120px)]">
+        <div className="col-span-12 lg:col-span-9 bg-white rounded-2xl shadow-lg p-4 overflow-y-auto max-h-[calc(100vh-120px)]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-3">
               Dashboard Analytics
