@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { FaCamera, FaSpinner, FaCheckCircle, FaExclamationCircle, FaMapMarkerAlt, FaUserCheck, FaClock, FaCalendarAlt, FaInfoCircle, FaStopCircle, FaTimes } from 'react-icons/fa';
 import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import Image from 'next/image';
 
 // Camera Modal Component
 const CameraModal = ({ isOpen, onClose, onCapture }: { isOpen: boolean; onClose: () => void; onCapture: (photo: string) => void }) => {
@@ -15,18 +16,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }: { isOpen: boolean; onClose:
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      startCamera();
-    }
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isOpen, facingMode]);
-
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
       setCameraError(null);
       if (stream) {
@@ -47,7 +37,18 @@ const CameraModal = ({ isOpen, onClose, onCapture }: { isOpen: boolean; onClose:
       console.error('Error accessing camera:', error);
       setCameraError('Unable to access camera. Please check permissions and try again.');
     }
-  };
+  }, [facingMode, stream]);
+
+  useEffect(() => {
+    if (isOpen) {
+      startCamera();
+    }
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isOpen, stream, startCamera]);
 
   const toggleCamera = () => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
@@ -55,7 +56,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }: { isOpen: boolean; onClose:
 
   const startCountdown = () => {
     setIsCapturing(true);
-    setCountdown(3);
+    // setCountdown(3);
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev === 1) {
@@ -188,14 +189,6 @@ const CameraModal = ({ isOpen, onClose, onCapture }: { isOpen: boolean; onClose:
   );
 };
 
-// Improved loading indicator
-const LoadingIndicator = () => (
-  <div className="flex items-center justify-center p-12">
-    <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-    <p className="text-gray-600 ml-4">Loading...</p>
-  </div>
-);
-
 // Enhanced feedback messages with animation
 const FeedbackMessage = ({ message, type }: { message: string; type: 'success' | 'error' }) => (
   <div 
@@ -297,7 +290,7 @@ function MarkAttendanceContent() {
       let location;
       try {
         location = await getCurrentLocation();
-      } catch (error) {
+      } catch  {
         setLocationError('Failed to get location. Please enable location services.');
         return;
       }
@@ -322,8 +315,8 @@ function MarkAttendanceContent() {
       } else {
         throw new Error(data.message || 'Failed to mark attendance');
       }
-    } catch (error: any) {
-      setMarkAttendanceError(error.message || 'Failed to mark attendance');
+    } catch (error: unknown) {
+      setMarkAttendanceError(error instanceof Error ? error.message : 'Failed to mark attendance');
     } finally {
       setMarkingAttendance(false);
     }
@@ -356,7 +349,7 @@ function MarkAttendanceContent() {
               <FaCalendarAlt className="text-2xl text-blue-200" />
               <div>
                 <p className="font-medium">{currentDate}</p>
-                <p className="text-sm text-blue-200">Today's Date</p>
+                <p className="text-sm text-blue-200">Today&apos;s Date</p>
               </div>
             </div>
           </div>
@@ -412,9 +405,11 @@ function MarkAttendanceContent() {
             <div className="flex flex-col items-center justify-center">
               {photoPreview ? (
                 <div className="relative group">
-                  <img
+                  <Image
                     src={photoPreview}
                     alt="Preview"
+                    width={800}
+                    height={600}
                     className="w-full h-[400px] object-cover rounded-lg shadow-lg"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
@@ -437,7 +432,7 @@ function MarkAttendanceContent() {
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 mb-3">Ready to Capture</h3>
                   <p className="text-gray-600 mb-8">
-                    Please ensure you're in a well-lit area and facing the camera directly
+                    Please ensure you&apos;re in a well-lit area and facing the camera directly
                   </p>
                   <button
                     onClick={() => setShowCameraModal(true)}
@@ -463,10 +458,10 @@ function MarkAttendanceContent() {
             <div className="p-4 bg-gray-50 rounded-xl">
               <p className="text-gray-600 mb-2">
                 <FaInfoCircle className="inline mr-2 text-blue-600" />
-                Your current location will be verified against your registered office location
+                Your device&apos;s location will be verified against your registered office location
               </p>
               <p className="text-sm text-gray-500">
-                Please ensure your device's location services are enabled
+                Please ensure your device&apos;s location services are enabled
               </p>
             </div>
 
@@ -524,21 +519,3 @@ export default function MarkAttendancePage() {
     </DashboardLayout>
   );
 }
-
-// Add these styles to your global CSS
-const styles = `
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slideIn {
-  animation: slideIn 0.3s ease-out forwards;
-}
-`; 

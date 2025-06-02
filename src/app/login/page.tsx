@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { login, isAuthenticated, getInitialRoute } from '@/services/auth';
+import { login, isAuthenticated, } from '@/services/auth';
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaArrowRight, FaSun, FaMoon } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';

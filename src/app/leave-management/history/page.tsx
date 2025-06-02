@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  FaSpinner, 
+
   FaCheckCircle, 
   FaExclamationCircle, 
   FaHistory,
@@ -15,7 +15,7 @@ import {
   FaTimes,
   FaEye,
   FaDownload,
-  FaInfoCircle
+
 } from 'react-icons/fa';
 import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
@@ -26,6 +26,14 @@ interface LeaveBalance {
   CL: number;
   SL: number;
   CompOff: number;
+}
+
+interface Attachment {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  uploadedAt: string;
 }
 
 interface LeaveHistory {
@@ -40,7 +48,7 @@ interface LeaveHistory {
   status: string;
   reason: string;
   emergencyContact: string;
-  attachments: any[];
+  attachments: Attachment[];
   appliedOn: string;
   lastUpdated: string;
 }
@@ -206,8 +214,8 @@ function LeaveHistoryContent() {
       }
 
       setLeaveData(data);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch leave history');
+    } catch  {
+      setError( 'Failed to fetch leave history');
       setLeaveData(null);
     } finally {
       setLoading(false);

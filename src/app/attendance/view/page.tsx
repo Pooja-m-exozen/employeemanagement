@@ -4,33 +4,38 @@ import { useEffect, useState, useMemo } from 'react';
 import { 
   FaCalendarAlt, 
   FaCheckCircle, 
-  FaTimesCircle, 
+  
   FaExclamationCircle, 
-  FaChartPie, 
+  
   FaChevronDown, 
   FaSearch, 
   FaChevronLeft, 
   FaChevronRight,  
   FaClipboardCheck,
-  FaSync,
+  
   FaClock,
-  FaMapMarkerAlt,
-  FaUserCheck,
+  
+  
   FaClock as FaClockIcon,
   FaSignInAlt,
   FaSignOutAlt,
-  FaPhoneAlt
 } from 'react-icons/fa';
 import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
+
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday} from 'date-fns';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+
+// Add TypeScript interfaces
+interface Location {
+  latitude: number;
+  longitude: number;
+}
 
 interface AttendanceRecord {
   date: string;
@@ -38,56 +43,22 @@ interface AttendanceRecord {
   status: string;
   punchInTime: string | null;
   punchOutTime: string | null;
-  punchInLocation?: {
-    latitude: number;
-    longitude: number;
-  };
-  punchOutLocation?: {
-    latitude: number;
-    longitude: number;
-  };
+  punchInUtc: string | null;
+  punchOutUtc: string | null;
+  punchInLocation?: Location;
+  punchOutLocation?: Location;
   punchInPhoto?: string;
   punchOutPhoto?: string;
-  totalHoursWorked?: string;
   isLate: boolean;
   remarks?: string;
+  totalHoursWorked: string;
 }
 
-interface MonthlyStats {
-  month: number;
-  year: number;
-  workingDays: number;
-  presentDays: number;
-  absentDays: number;
-  halfDays: number;
-  overtimeDays: number;
-  lateArrivals: number;
-  earlyArrivals: number;
-  earlyLeaves: number;
-  attendanceRate: string;
+interface StatusInfo {
+  code: string;
+  color: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
-
-// Mock data for development
-const MOCK_DATA = {
-  monthlyStats: {
-    month: new Date().getMonth(),
-    year: new Date().getFullYear(),
-    workingDays: 22,
-    presentDays: 18,
-    absentDays: 2,
-    halfDays: 1,
-    overtimeDays: 1,
-    lateArrivals: 2,
-    earlyArrivals: 15,
-    earlyLeaves: 1,
-    attendanceRate: "81.82%"
-  },
   records: Array.from({ length: 22 }, (_, i) => {
     const date = new Date();
     date.setDate(i + 1);
@@ -132,25 +103,11 @@ const MOCK_DATA = {
       punchOutPhoto: isPresent ? '/mock-punch-out-photo.jpg' : undefined
     };
   })
-};
 
-// Error Message Component
-const ErrorMessage = ({ message }: { message: string }) => (
-  <div className="flex items-center justify-center p-4 bg-red-50 rounded-lg">
-    <FaExclamationCircle className="text-red-500 mr-2" />
-    <p className="text-red-700">{message}</p>
-  </div>
-);
 
-// Loading Spinner Component
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center p-12">
-    <div className="relative">
-      <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-      <div className="mt-4 text-center text-gray-600">Loading...</div>
-    </div>
-  </div>
-);
+
+
+
 
 // Helper: format UTC time string as hh:mm AM/PM (no timezone conversion)
 function formatUtcTime(utcString: string | null): string | null {
@@ -213,74 +170,75 @@ function ViewAttendanceContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<AttendanceRecord[]>([]);
   const [showDetailedRecordsModal, setShowDetailedRecordsModal] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 5;
-  const [selectedActivity, setSelectedActivity] = useState<any | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<AttendanceRecord | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push('/login');
       return;
     }
+
+    const fetchActivities = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const employeeId = getEmployeeId();
+        const month = selectedDate.getMonth() + 1;
+        const year = selectedDate.getFullYear();
+        
+        const response = await fetch(`https://cafm.zenapi.co.in/api/attendance/report/monthly/employee?employeeId=${employeeId}&month=${month}&year=${year}`);
+        const data = await response.json();
+        
+        if (response.ok && data.attendance) {
+          const transformedActivities = data.attendance.map((record: Record<string, unknown>) => {
+            const dateStr = (record.date as string).split('T')[0];
+            let status = record.status as string;
+            if (isHoliday(dateStr)) status = 'Holiday';
+            return {
+              date: dateStr,
+              displayDate: format(new Date(record.date as string), 'EEE, MMM d, yyyy'),
+              status,
+              punchInTime: record.punchInTime ? formatUtcTime(record.punchInTime as string) : null,
+              punchOutTime: record.punchOutTime ? formatUtcTime(record.punchOutTime as string) : null,
+              punchInUtc: record.punchInTime as string || null,
+              punchOutUtc: record.punchOutTime as string || null,
+              punchInLocation: record.punchInLatitude && record.punchInLongitude ? {
+                latitude: record.punchInLatitude as number,
+                longitude: record.punchInLongitude as number
+              } : undefined,
+              punchOutLocation: record.punchOutLatitude && record.punchOutLongitude ? {
+                latitude: record.punchOutLatitude as number,
+                longitude: record.punchOutLongitude as number
+              } : undefined,
+              punchInPhoto: record.punchInPhoto as string,
+              punchOutPhoto: record.punchOutPhoto as string,
+              isLate: record.isLate as boolean || false,
+              remarks: record.remarks as string,
+              totalHoursWorked: calculateHoursUtc(record.punchInTime as string, record.punchOutTime as string)
+            };
+          });
+          
+          setActivities(transformedActivities);
+        } else {
+          setActivities([]);
+          setError('No attendance data found.');
+        }
+      } catch (error) {
+        setActivities([]);
+        setError('Failed to fetch attendance data.');
+        console.error('Error fetching attendance:', error);
+      }
+      setLoading(false);
+    };
+
     fetchActivities();
   }, [router, selectedDate]);
-
-  const fetchActivities = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const employeeId = getEmployeeId();
-      const month = selectedDate.getMonth() + 1;
-      const year = selectedDate.getFullYear();
-      
-      const response = await fetch(`https://cafm.zenapi.co.in/api/attendance/report/monthly/employee?employeeId=${employeeId}&month=${month}&year=${year}`);
-      const data = await response.json();
-      
-      if (response.ok && data.attendance) {
-        // Transform API data to match our component's expected format
-        const transformedActivities = data.attendance.map((record: any) => {
-          const dateStr = record.date.split('T')[0];
-          let status = record.status;
-          if (isHoliday(dateStr)) status = 'Holiday';
-          return {
-            date: dateStr,
-            displayDate: format(new Date(record.date), 'EEE, MMM d, yyyy'),
-            status,
-            punchInTime: record.punchInTime ? formatUtcTime(record.punchInTime) : null,
-            punchOutTime: record.punchOutTime ? formatUtcTime(record.punchOutTime) : null,
-            punchInUtc: record.punchInTime || null,
-            punchOutUtc: record.punchOutTime || null,
-            punchInLocation: record.punchInLatitude && record.punchInLongitude ? {
-              latitude: record.punchInLatitude,
-              longitude: record.punchInLongitude
-            } : undefined,
-            punchOutLocation: record.punchOutLatitude && record.punchOutLongitude ? {
-              latitude: record.punchOutLatitude,
-              longitude: record.punchOutLongitude
-            } : undefined,
-            punchInPhoto: record.punchInPhoto,
-            punchOutPhoto: record.punchOutPhoto,
-            isLate: record.isLate || false,
-            remarks: record.remarks,
-            totalHoursWorked: calculateHoursUtc(record.punchInTime, record.punchOutTime)
-          };
-        });
-        
-        setActivities(transformedActivities);
-      } else {
-        setActivities([]);
-        setError('No attendance data found.');
-      }
-    } catch (e) {
-      setActivities([]);
-      setError('Failed to fetch attendance data.');
-    }
-    setLoading(false);
-  };
 
   const getCalendarDays = () => {
     const start = startOfMonth(selectedDate);
@@ -299,7 +257,7 @@ function ViewAttendanceContent() {
     ];
   };
 
-  const getStatusForDate = (date: Date) => {
+  const getStatusForDate = (date: Date): StatusInfo => {
     const activity = activities.find(a => a.date === format(date, 'yyyy-MM-dd'));
     if (!activity) return { code: '', color: '' };
     if (activity.status === 'Present') return { code: 'P', color: 'text-green-600' };
@@ -311,12 +269,12 @@ function ViewAttendanceContent() {
 
   // Filtered and paginated activities for modal
   const filteredActivities = useMemo(() => {
-    return activities.filter(a => {
+    return activities.filter((activity: AttendanceRecord) => {
       const matchesSearch = search === '' ||
-        a.displayDate.toLowerCase().includes(search.toLowerCase()) ||
-        a.status.toLowerCase().includes(search.toLowerCase()) ||
-        (a.time && a.time.toLowerCase().includes(search.toLowerCase()));
-      const matchesStatus = statusFilter === 'all' || a.status.toLowerCase() === statusFilter;
+        activity.displayDate.toLowerCase().includes(search.toLowerCase()) ||
+        activity.status.toLowerCase().includes(search.toLowerCase()) ||
+        (activity.punchInTime && activity.punchInTime.toLowerCase().includes(search.toLowerCase()));
+      const matchesStatus = statusFilter === 'all' || activity.status.toLowerCase() === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [activities, search, statusFilter]);
@@ -358,7 +316,7 @@ function ViewAttendanceContent() {
     </div>
   );
 
-  const getDayBackgroundColor = (activity: any, isCurrentMonth: boolean) => {
+  const getDayBackgroundColor = (activity: AttendanceRecord | undefined, isCurrentMonth: boolean) => {
     if (!isCurrentMonth) return 'bg-gray-50';
     if (!activity) return 'bg-white';
     switch (activity.status.toLowerCase()) {
@@ -413,7 +371,7 @@ function ViewAttendanceContent() {
             </ul>
             <div className="mt-3 flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded-lg text-xs">
                   <FaExclamationCircle className="w-4 h-4 flex-shrink-0" />
-              Important: Ensure your device's location services and camera permissions are enabled for accurate attendance tracking.
+              Important: Ensure your device&apos;s location services and camera permissions are enabled for accurate attendance tracking.
                 </div>
               </div>
             </div>
@@ -466,10 +424,10 @@ function ViewAttendanceContent() {
                       ${isSameMonth(date, selectedDate) ? getDayBackgroundColor(activity, true) : 'bg-gray-50 opacity-60'}
                       group
                     `}
-                    title={activity ? `${activity.status}${activity.time ? ' at ' + activity.time : ''}` : ''}
+                    title={activity ? `${activity.status}${activity.punchInTime ? ' at ' + activity.punchInTime : ''}` : ''}
                   >
                     <span className="absolute top-1 left-1 text-xs text-gray-400">{date ? format(date, 'd') : ''}</span>
-                    <span className="mt-2 text-base font-bold text-gray-800">
+                    <span className={`mt-2 text-base font-bold ${color}`}>
                       {code}
                     </span>
                     {activity && activity.remarks && (

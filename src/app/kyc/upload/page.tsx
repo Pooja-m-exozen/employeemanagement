@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { FaUpload, FaSpinner, FaCheckCircle, FaTimesCircle, FaFileAlt, FaExclamationCircle, FaInfoCircle, FaArrowLeft, FaIdCard, FaIdBadge, FaPassport, FaUserCircle, FaQuestionCircle } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated, getEmployeeId } from '@/services/auth';
+import Image from 'next/image';
+import { getEmployeeId } from '@/services/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DocumentUpload {
@@ -145,7 +146,7 @@ export default function UploadDocuments() {
     setUploadProgress(0);
 
     const requiredDocuments = (Object.entries(documentInfo) as [DocumentType, typeof documentInfo[DocumentType]][])
-      .filter(([_, info]) => info.required)
+      .filter(([, info]) => info.required)
       .map(([type]) => type);
 
     const missingDocuments = requiredDocuments.filter(type => !documents[type].file);
@@ -171,7 +172,7 @@ export default function UploadDocuments() {
         router.push('/kyc');
       }, 2000);
     } catch (error) {
-      setGlobalError('Failed to upload some documents. Please try again.');
+      setGlobalError(error instanceof Error ? error.message : 'Failed to upload some documents. Please try again.');
     }
   };
 
@@ -228,9 +229,11 @@ export default function UploadDocuments() {
           <div className="space-y-4">
             {doc.preview ? (
               <div className="relative rounded-2xl overflow-hidden bg-gray-50 group">
-                <img
+                <Image
                   src={doc.preview}
                   alt={`${label} preview`}
+                  width={500}
+                  height={300}
                   className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">

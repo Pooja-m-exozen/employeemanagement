@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { FaSpinner, FaExclamationCircle, FaSync, FaDownload, FaPrint, FaCalendarAlt, FaUser, FaMoneyBillWave, FaFileInvoiceDollar } from 'react-icons/fa';
+import {  FaExclamationCircle, FaSync, FaDownload, FaPrint, FaCalendarAlt, FaFileInvoiceDollar } from 'react-icons/fa';
 import domtoimage from 'dom-to-image';
 import jsPDF from 'jspdf';
 import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface Deductions {
   pf: number;
@@ -53,17 +54,8 @@ const PayslipPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState('2023-05');
-  const [isPrinting, setIsPrinting] = useState(false);
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login');
-      return;
-    }
-    fetchPayslip();
-  }, [router]);
-
-  const fetchPayslip = async () => {
+  const fetchPayslip = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -88,7 +80,15 @@ const PayslipPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMonth]);
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
+    fetchPayslip();
+  }, [router, fetchPayslip]);
 
   const handleDownload = async () => {
     if (typeof window !== 'undefined') {
@@ -143,9 +143,7 @@ const PayslipPage = () => {
   };
 
   const handlePrint = () => {
-    setIsPrinting(true);
     window.print();
-    setTimeout(() => setIsPrinting(false), 500);
   };
 
   if (loading) {
@@ -264,7 +262,16 @@ const PayslipPage = () => {
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-start gap-6">
-              <img src="/exozen_logo.png" alt="Company Logo" className="h-16 w-auto" />
+              <div className="relative h-16 w-auto">
+                <Image 
+                  src="/exozen_logo.png" 
+                  alt="Company Logo" 
+                  width={64}
+                  height={64}
+                  className="h-16 w-auto"
+                  priority
+                />
+              </div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-black">M/s Exozen Private Limited.,</h2>
                 <p className="text-sm text-gray-900 mt-1">

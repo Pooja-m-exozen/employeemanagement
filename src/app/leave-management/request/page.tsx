@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  FaSpinner, 
+
   FaCheckCircle, 
   FaExclamationCircle, 
   FaCalendarAlt, 
@@ -36,12 +36,7 @@ interface LeaveBalance {
   CompOff: number;
 }
 
-interface LeaveBalanceResponse {
-  employeeId: string;
-  employeeName: string;
-  totalLeaves: number;
-  leaveBalances: LeaveBalance;
-}
+
 
 // Enhanced feedback messages with animation
 const FeedbackMessage = ({ message, type }: { message: string; type: 'success' | 'error' }) => (
@@ -107,8 +102,8 @@ function RequestLeaveContent() {
       }
 
       setLeaveBalances(data.leaveBalances);
-    } catch (error: any) {
-      console.error('Error fetching leave balances:', error);
+    } catch (error: unknown) {
+      console.error('Error fetching leave balances:', error instanceof Error ? error.message : error);
     }
   };
 
@@ -155,8 +150,9 @@ function RequestLeaveContent() {
       } else {
         throw new Error(data.message || 'Failed to submit leave request');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to submit leave request');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit leave request';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

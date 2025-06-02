@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaUser, FaMapMarkerAlt, FaIdCard, FaSpinner, FaSave, FaExclamationCircle, FaCheckCircle, FaArrowLeft, FaGlobe, FaPhone, FaEnvelope, FaBirthdayCake, FaVenusMars, FaBuilding, FaCalendarAlt, FaUserTie, FaRing, FaTint, FaGraduationCap, FaLaptopHouse, FaLanguage, FaMoneyCheckAlt, FaUniversity, FaPhoneVolume, FaUserFriends, FaHeart, FaInfoCircle } from 'react-icons/fa';
+import { FaUser, FaMapMarkerAlt, FaIdCard, FaSpinner, FaSave, FaExclamationCircle, FaCheckCircle, FaArrowLeft, FaMoneyCheckAlt,  FaPhoneVolume,  FaInfoCircle } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -130,7 +130,7 @@ const initialKYCData: KYCData = {
   status: '',
 };
 
-const validateAndTransformKYCData = (data: any): KYCData => {
+const validateAndTransformKYCData = (data: Partial<KYCData>): KYCData => {
   return {
     personalDetails: {
       employeeId: data?.personalDetails?.employeeId || '',
@@ -598,10 +598,10 @@ export default function EditKYC() {
                             />
                           </div>
 
-                          {/* Father's Name */}
+                          {/* Father&apos;s Name */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Father's Name
+                              Father&apos;s Name
                             </label>
                             <input
                               type="text"
@@ -619,10 +619,10 @@ export default function EditKYC() {
                             />
                           </div>
 
-                          {/* Mother's Name */}
+                          {/* Mother&apos;s Name */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Mother's Name
+                              Mother&apos;s Name
                             </label>
                             <input
                               type="text"
@@ -1444,7 +1444,7 @@ export default function EditKYC() {
                           <h4 className="text-sm font-medium text-gray-700 mb-4">Uploaded Documents</h4>
                           {kycData.documents.length > 0 ? (
                             <div className="space-y-4">
-                              {kycData.documents.map((doc, index) => (
+                              {kycData.documents.map((doc) => (
                                 <div
                                   key={doc._id}
                                   className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
@@ -1456,7 +1456,7 @@ export default function EditKYC() {
                                         {doc.type}
                                       </p>
                                       <p className="text-xs text-gray-500">
-                                        Uploaded on{' '}
+                                        Uploaded on &apos;
                                         {new Date(doc.uploadedAt).toLocaleDateString()}
                                       </p>
                                     </div>

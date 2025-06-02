@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AttendanceReport from '../components/AttendanceReport';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -23,15 +23,7 @@ const AttendancePage = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login');
-      return;
-    }
-    fetchAttendanceData();
-  }, [selectedMonth, selectedYear, router]);
-
-  const fetchAttendanceData = async () => {
+  const fetchAttendanceData = useCallback(async () => {
     setLoading(true);
     try {
       const employeeId = getEmployeeId();
@@ -54,7 +46,15 @@ const AttendancePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
+    fetchAttendanceData();
+  }, [fetchAttendanceData, router]);
 
   const handleMonthChange = (month: number) => {
     setSelectedMonth(month);

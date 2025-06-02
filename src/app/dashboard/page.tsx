@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import type { ChartData, ChartOptions } from 'chart.js';
 import { useUser } from '@/context/UserContext';
-import Confetti from 'react-confetti';
-import { getDashboardData, getMonthlyStats, submitLeaveRequest, submitRegularization, uploadDocument, getLeaveBalance } from '@/services/dashboard';
+
+import { getDashboardData, getMonthlyStats, getLeaveBalance } from '@/services/dashboard';
 import { getEmployeeId } from '@/services/auth';
-import type { BirthdayResponse, WorkAnniversaryResponse, LeaveBalanceResponse, MonthlyStats, DepartmentStats, AnalyticsViewType, ChartType, LeaveType } from '../../types/dashboard';
-import { FaCalendarCheck, FaClipboardList, FaFileAlt, FaFileUpload, FaPlusCircle, FaRegCalendarPlus, FaTicketAlt, FaUserClock } from 'react-icons/fa';
+import type { LeaveBalanceResponse, MonthlyStats, AnalyticsViewType, ChartType, LeaveType } from '../../types/dashboard';
+
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -19,20 +19,13 @@ export default function Dashboard() {
   const router = useRouter();
   const userDetails = useUser();
   const employeeId = getEmployeeId();
-  const [birthdays, setBirthdays] = useState<BirthdayResponse | null>(null);
-  const [anniversaries, setAnniversaries] = useState<WorkAnniversaryResponse | null>(null);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalanceResponse | null>(null);
-  const [attendanceActivities, setAttendanceActivities] = useState<any[]>([]);
   const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth() + 1);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentYear] = useState(new Date().getFullYear());
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
   const [monthlyStatsCache, setMonthlyStatsCache] = useState<Record<string, MonthlyStats>>({});
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
 
   // State for analytics view and chart type
   const [analyticsView, setAnalyticsView] = useState<AnalyticsViewType>('attendance');
@@ -66,10 +59,9 @@ export default function Dashboard() {
     }
   };
 
-  const fetchData = async (showLoading = true, monthToFetch: number = currentMonth, yearToFetch: number = currentYear) => {
+  const fetchData = useCallback(async (showLoading = true, monthToFetch: number = currentMonth, yearToFetch: number = currentYear) => {
     try {
       if (showLoading) setLoading(true);
-      setAnalyticsLoading(true);
       const monthYearKey = `${monthToFetch}-${yearToFetch}`;
 
       // Check cache first for monthly stats
@@ -97,18 +89,13 @@ export default function Dashboard() {
       setLeaveBalance(leaveBalanceData);
 
       // Fetch other dashboard data
-      const data = await getDashboardData(employeeId || '', monthToFetch, yearToFetch);
-      setBirthdays(data.birthdays);
-      setAnniversaries(data.anniversaries);
-      setAttendanceActivities(data.attendanceActivities);
+      await getDashboardData(employeeId || '', monthToFetch, yearToFetch);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       if (showLoading) setLoading(false);
-      setRefreshing(false);
-      setAnalyticsLoading(false);
     }
-  };
+  }, [currentMonth, currentYear, employeeId, monthlyStatsCache]);
 
   // Initial data fetch on component mount
   useEffect(() => {
@@ -116,12 +103,11 @@ export default function Dashboard() {
 
     // Poll every 5 minutes
     const pollInterval = setInterval(() => {
-      setRefreshing(true);
       fetchData(false, currentMonth, currentYear);
     }, 5 * 60 * 1000);
 
     return () => clearInterval(pollInterval);
-  }, []);
+  }, [currentMonth, currentYear, fetchData]);
 
   // Effect to update displayed monthly stats when currentMonth or currentYear changes
   useEffect(() => {
@@ -133,84 +119,7 @@ export default function Dashboard() {
         fetchData(false, currentMonth, currentYear);
       }
     }
-  }, [currentMonth, currentYear, monthlyStatsCache]);
-
-  useEffect(() => {
-    if (birthdays?.success && birthdays.data && birthdays.data.length > 0) {
-      setShowCelebration(true);
-      setCelebrationMessage(`Happy Birthday ${birthdays.data[0].fullName}! 🎉`);
-    } else if (anniversaries?.success && anniversaries.data && anniversaries.data.length > 0) {
-      setShowCelebration(true);
-      setCelebrationMessage(`Happy Work Anniversary ${anniversaries.data[0].fullName}! 🎉`);
-    } else {
-      setShowCelebration(false);
-      setCelebrationMessage(null);
-    }
-  }, [birthdays, anniversaries]);
-
-  const LoadingSpinner = () => (
-    <div className="flex items-center justify-center p-4">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-    </div>
-  );
-
-  
-
-  // Colors for leave types
-  const leaveColors = {
-    EL: {
-      gradient: 'from-emerald-400 to-emerald-600',
-      bg: 'rgba(16, 185, 129, 0.8)',
-      border: 'rgba(16, 185, 129, 1)',
-      light: 'bg-emerald-50',
-      text: 'text-emerald-600'
-    },
-    SL: {
-      gradient: 'from-red-400 to-red-600',
-      bg: 'rgba(239, 68, 68, 0.8)',
-      border: 'rgba(239, 68, 68, 1)',
-      light: 'bg-red-50',
-      text: 'text-red-600'
-    },
-    CL: {
-      gradient: 'from-blue-400 to-blue-600',
-      bg: 'rgba(59, 130, 246, 0.8)',
-      border: 'rgba(59, 130, 246, 1)',
-      light: 'bg-blue-50',
-      text: 'text-blue-600'
-    },
-    CompOff: {
-      gradient: 'from-purple-400 to-purple-600',
-      bg: 'rgba(139, 92, 246, 0.8)',
-      border: 'rgba(139, 92, 246, 1)',
-      light: 'bg-purple-50',
-      text: 'text-purple-600'
-    }
-  };
-
-  // Colors for attendance status
-  const attendanceColors = {
-    Present: {
-      bg: 'rgba(16, 185, 129, 0.8)',
-      border: 'rgba(16, 185, 129, 1)',
-      text: 'text-emerald-600'
-    },
-    Absent: {
-      bg: 'rgba(239, 68, 68, 0.8)',
-      border: 'rgba(239, 68, 68, 1)',
-      text: 'text-red-600'
-    },
-    Late: {
-      bg: 'rgba(245, 158, 11, 0.8)',
-      border: 'rgba(245, 158, 11, 1)',
-      text: 'text-amber-600'
-    },
-    Early: { // Adding early arrivals color for consistency
-      bg: 'rgba(75, 192, 192, 0.8)',
-      border: 'rgba(75, 192, 192, 1)',
-      text: 'text-teal-600' // Assuming a teal text color
-    }
-  };
+  }, [currentMonth, currentYear, monthlyStatsCache, fetchData]);
 
   // Update barChartOptions with new configuration
   const barChartOptions: ChartOptions<'bar'> = {
@@ -368,12 +277,7 @@ export default function Dashboard() {
     </div>
   );
 
-  const leaveTypeLabels: Record<LeaveType, string> = {
-    EL: 'Earned Leave',
-    CL: 'Casual Leave',
-    SL: 'Sick Leave',
-    CompOff: 'Comp Off',
-  };
+
 
   const renderAttendanceChart = () => {
     if (!monthlyStats?.data) return null;
@@ -596,27 +500,8 @@ export default function Dashboard() {
     );
   };
 
-  interface MetricCardProps {
-    icon: React.ElementType;
-    title: string;
-    value: string;
-    subtext: string;
-    gradient: string;
-  }
+ 
 
-  const MetricCard: React.FC<MetricCardProps> = ({ icon: Icon, title, value, subtext, gradient }) => (
-    <div className={`bg-gradient-to-br ${gradient} rounded-xl shadow-md p-4 text-white
-      transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group`}>
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-white/10 rounded-lg group-hover:scale-110 transition-transform">
-          <Icon className="text-2xl opacity-80" />
-        </div>
-        <h3 className="text-sm font-medium opacity-90">{title}</h3>
-      </div>
-      <p className="text-2xl font-bold mt-2">{value}</p>
-      <p className="text-xs opacity-75 mt-1">{subtext}</p>
-    </div>
-  );
 
   const handleRequestLeave = () => {
     router.push('/leave-management/request');

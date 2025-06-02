@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FaSpinner, FaSearch, FaEye, FaTimes, FaFilter, FaEdit, FaFileAlt, FaUser, FaEnvelope, FaPhone, FaIdCard, FaMapMarkerAlt, FaTimesCircle, FaExclamationCircle,FaUniversity, FaCheckCircle, FaHome, FaUserCircle, FaBuilding, FaAddressCard, FaQuestionCircle, FaInfoCircle, FaLightbulb, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
-import { isAuthenticated, isEmployee, getUserRole, getEmployeeId } from '@/services/auth';
+import { useEffect, useState, useCallback } from 'react';
+import { FaSpinner,  FaEye, FaTimes,  FaFileAlt, FaUser, FaPhone, FaIdCard,  FaTimesCircle, FaExclamationCircle, FaCheckCircle,  FaUserCircle, FaBuilding, FaAddressCard, FaQuestionCircle,  FaLightbulb,} from 'react-icons/fa';
+import { isAuthenticated,  getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
+import Image from 'next/image';
 
 // import classNames from 'classnames';
 
@@ -89,10 +90,8 @@ export default function ViewKYC() {
   const [kycResponse, setKYCResponse] = useState<KYCResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState(0);
   const [showInstructions, setShowInstructions] = useState(true);
-  const [activeSection, setActiveSection] = useState('personal');
   const [completionStatus, setCompletionStatus] = useState({
     personal: false,
     address: false,
@@ -100,17 +99,8 @@ export default function ViewKYC() {
     emergency: false,
     documents: false
   });
-  const [showQuickNav, setShowQuickNav] = useState(false);
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login');
-      return;
-    }
-    fetchKYCData();
-  }, [router]);
-
-  const fetchKYCData = async () => {
+  const fetchKYCData = useCallback(async () => {
     try {
       if (!employeeId) {
         throw new Error('Employee ID not found');
@@ -121,25 +111,22 @@ export default function ViewKYC() {
       }
       const data = await response.json();
       setKYCResponse(data);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch KYC data');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch KYC data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [employeeId]);
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'approved':
-        return 'bg-green-50 text-green-700 ring-green-600/20';
-      case 'pending':
-        return 'bg-yellow-50 text-yellow-700 ring-yellow-600/20';
-      case 'rejected':
-        return 'bg-red-50 text-red-700 ring-red-600/20';
-      default:
-        return 'bg-gray-50 text-gray-700 ring-gray-600/20';
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
     }
-  };
+    fetchKYCData();
+  }, [router, fetchKYCData]);
+
+
 
   // Calculate completion percentage
   const calculateCompletion = () => {
@@ -240,17 +227,6 @@ export default function ViewKYC() {
     </div>
   );
 
-  // Help Button component
-  const HelpButton = () => (
-    <button
-      onClick={() => setShowInstructions(true)}
-      className="fixed bottom-8 right-8 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
-      data-tooltip-id="help-tooltip"
-    >
-      <FaQuestionCircle className="w-6 h-6" />
-      <Tooltip id="help-tooltip">Need help? Click for instructions</Tooltip>
-    </button>
-  );
 
   if (loading) {
     return (
@@ -298,328 +274,19 @@ export default function ViewKYC() {
     { icon: FaFileAlt, label: 'Documents', id: 4, key: 'documents' as CompletionStatusKey },
   ];
 
-  // Helper function for address field tooltips
-  const getAddressFieldTooltip = (field: string) => {
-    switch (field) {
-      case 'street':
-        return 'Your street address including house/apartment number';
-      case 'city':
-        return 'The city or town where you reside';
-      case 'state':
-        return 'Your state of residence';
-      case 'postalCode':
-        return 'Your area PIN code';
-      default:
-        return '';
-    }
-  };
 
-  // Helper functions for document handling
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
-  const getFileSize = (url: string) => {
-    // This is a placeholder. In a real application, you would get the actual file size
-    return Math.floor(Math.random() * 5 * 1024 * 1024); // Random size up to 5MB
-  };
 
-  const getFileExtension = (url: string) => {
-    return url.split('.').pop() || '';
-  };
 
-  // Left Side Navigation component
-  const LeftNavigation = () => (
-    <div className="w-72 h-screen bg-white shadow-lg z-40 hidden lg:block">
-      <div className="h-full flex flex-col">
-        {/* Profile Section */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-3">
-            {kycData.personalDetails.employeeImage ? (
-              <div className="relative">
-                <img
-                  src={kycData.personalDetails.employeeImage}
-                  alt="Employee"
-                  className="w-14 h-14 rounded-xl object-cover ring-2 ring-blue-100"
-                />
-                <div className="absolute -bottom-1 -right-1">
-                  <div className={classNames(
-                    'w-4 h-4 rounded-full border-2 border-white',
-                    kycData.status.toLowerCase() === 'approved' ? 'bg-green-500' :
-                    kycData.status.toLowerCase() === 'pending' ? 'bg-yellow-500' :
-                    'bg-red-500'
-                  )}/>
-                </div>
-              </div>
-            ) : (
-              <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center">
-                <FaUser className="w-7 h-7 text-blue-500" />
-              </div>
-            )}
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 truncate max-w-[160px]">
-                {kycData.personalDetails.fullName}
-              </h2>
-              <p className="text-sm text-gray-500">{kycData.personalDetails.employeeId}</p>
-            </div>
-          </div>
-          
-          {/* Completion Status */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">Completion</span>
-              <span className="text-sm font-semibold text-blue-600">{calculateCompletion()}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${calculateCompletion()}%` }}
-              />
-            </div>
-          </div>
-        </div>
+ 
 
-        {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto py-6">
-          <nav className="px-4 space-y-2">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setSelectedTab(item.id)}
-                className={classNames(
-                  'w-full flex items-center justify-between p-4 rounded-xl transition-all duration-200',
-                  selectedTab === item.id
-                    ? 'bg-blue-50 text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-50'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className={classNames(
-                    'w-5 h-5',
-                    selectedTab === item.id ? 'text-blue-600' : 'text-gray-400'
-                  )} />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {completionStatus[item.key] ? (
-                    <FaCheckCircle className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <FaExclamationCircle className="w-4 h-4 text-yellow-500" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="p-6 border-t border-gray-100">
-          <div className="bg-blue-50 rounded-xl p-4">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Need Help?</h4>
-            <p className="text-sm text-blue-700 mb-3">
-              Contact HR support for assistance with your KYC verification.
-            </p>
-            <a
-              href="mailto:hr@support.com"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-2"
-            >
-              <FaEnvelope className="w-4 h-4" />
-              hr@support.com
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Mobile Header
-  const MobileHeader = () => (
-    <div className="sticky top-0 z-40 lg:hidden bg-white border-b border-gray-200">
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {kycData.personalDetails.employeeImage ? (
-              <img
-                src={kycData.personalDetails.employeeImage}
-                alt="Employee"
-                className="w-10 h-10 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <FaUser className="w-5 h-5 text-blue-500" />
-              </div>
-            )}
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 truncate max-w-[200px]">
-                {kycData.personalDetails.fullName}
-              </h2>
-              <p className="text-xs text-gray-500">{kycData.personalDetails.employeeId}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowQuickNav(true)}
-            className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200"
-            aria-label="Open navigation"
-          >
-            <FaFilter className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-      </div>
-      <div className="px-4 pb-3">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setSelectedTab(item.id)}
-              className={classNames(
-                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                selectedTab === item.id
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-              {completionStatus[item.key] && (
-                <FaCheckCircle className="w-3 h-3" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  // Quick Navigation component (updated)
-  const QuickNavigation = () => (
-    <motion.div
-      initial={{ opacity: 0, x: 300 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 300 }}
-      className="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl z-50"
-    >
-      <div className="h-full flex flex-col">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Navigation</h3>
-            <button
-              onClick={() => setShowQuickNav(false)}
-              className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
-            >
-              <FaTimes className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto py-6">
-          <div className="px-6 space-y-3">
-            {navigationItems.map((item, index) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setSelectedTab(item.id);
-                  setShowQuickNav(false);
-                }}
-                className={classNames(
-                  'w-full flex items-center justify-between p-4 rounded-xl transition-all',
-                  selectedTab === item.id
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'hover:bg-gray-50 text-gray-600'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {completionStatus[item.key] ? (
-                    <FaCheckCircle className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <FaExclamationCircle className="w-4 h-4 text-yellow-500" />
-                  )}
-                  <FaChevronRight className="w-4 h-4" />
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-6 border-t border-gray-100">
-          <div className="bg-blue-50 rounded-xl p-4">
-            <p className="text-sm text-blue-700 mb-2">Need assistance?</p>
-            <p className="text-xs text-blue-600">
-              Contact HR support at <br />
-              <a href="mailto:hr@support.com" className="font-medium">hr@support.com</a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
+  // const getFileExtension = (url: string) => {
+  //   return url.split('.').pop() || '';
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 font-sans">
       <div className="flex">
-        {/* Left Navigation for desktop */}
-        <div className="hidden lg:block w-72 min-h-screen bg-white shadow-lg">
-          <div className="h-full flex flex-col p-6">
-            {/* Profile Section */}
-            <div className="flex items-center gap-4 mb-6">
-              {kycData.personalDetails.employeeImage ? (
-                <div className="relative">
-                  <img
-                    src={kycData.personalDetails.employeeImage}
-                    alt="Employee"
-                    className="w-16 h-16 rounded-xl object-cover ring-2 ring-indigo-100"
-                  />
-                  <div className="absolute -bottom-1 -right-1">
-                    <div className={classNames(
-                      'w-4 h-4 rounded-full border-2 border-white',
-                      getStatusColor(kycData.status)
-                    )}/>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-16 h-16 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <FaUser className="w-8 h-8 text-indigo-500" />
-                </div>
-              )}
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {kycData.personalDetails.fullName}
-                </h2>
-                <p className="text-sm text-gray-500">{kycData.personalDetails.employeeId}</p>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 -mx-2">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setSelectedTab(item.id)}
-                  className={classNames(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1',
-                    selectedTab === item.id
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  )}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                  {completionStatus[item.key] && (
-                    <FaCheckCircle className="w-4 h-4 ml-auto" />
-                  )}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto" style={{height: 'calc(100vh - 64px)'}}>
           {/* Mobile Header */}
@@ -627,14 +294,26 @@ export default function ViewKYC() {
             <div className="px-4 py-2 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {kycData.personalDetails.employeeImage ? (
-                  <img
-                    src={kycData.personalDetails.employeeImage}
-                    alt="Employee"
-                    className="w-10 h-10 rounded-lg object-cover"
-                  />
+                  <div className="relative">
+                    <Image
+                      src={kycData.personalDetails.employeeImage}
+                      alt="Employee"
+                      width={56}
+                      height={56}
+                      className="rounded-xl object-cover ring-2 ring-blue-100"
+                    />
+                    <div className="absolute -bottom-1 -right-1">
+                      <div className={classNames(
+                        'w-4 h-4 rounded-full border-2 border-white',
+                        kycData.status.toLowerCase() === 'approved' ? 'bg-green-500' :
+                        kycData.status.toLowerCase() === 'pending' ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      )}/>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <FaUser className="w-5 h-5 text-indigo-500" />
+                  <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <FaUser className="w-7 h-7 text-blue-500" />
                   </div>
                 )}
                 <div className="flex flex-col">

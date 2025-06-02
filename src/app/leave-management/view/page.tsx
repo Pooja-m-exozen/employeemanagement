@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  FaSpinner, 
   FaCheckCircle, 
   FaExclamationCircle,
   FaCalendarCheck,
@@ -16,7 +15,22 @@ import {
 import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import { 
+  Chart as ChartJS, 
+  ArcElement, 
+  Tooltip, 
+  Legend, 
+  CategoryScale, 
+  LinearScale, 
+  BarElement, 
+  Title,
+  ChartOptions,
+  TooltipItem,
+  Scale,
+  CoreScaleOptions,
+  
+  FontSpec
+} from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
@@ -105,8 +119,9 @@ function LeaveViewContent() {
       }
 
       setLeaveBalance(data);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch leave balance');
+    } catch (error: Error | unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leave balance';
+      setError(errorMessage);
       setLeaveBalance(null);
     } finally {
       setLoading(false);
@@ -197,7 +212,7 @@ function LeaveViewContent() {
       ]
     };
 
-    const commonOptions = {
+    const baseOptions = {
       responsive: true,
       maintainAspectRatio: false,
       animation: {
@@ -214,7 +229,7 @@ function LeaveViewContent() {
             font: {
               size: 12,
               family: "'Inter', sans-serif",
-              weight: 'bold'
+              weight: 'bold' as FontSpec['weight']
             }
           }
         },
@@ -229,7 +244,7 @@ function LeaveViewContent() {
           titleFont: {
             size: 14,
             family: "'Inter', sans-serif",
-            weight: 'bold'
+            weight: 'bold' as FontSpec['weight']
           },
           padding: 12,
           boxPadding: 8,
@@ -240,50 +255,38 @@ function LeaveViewContent() {
           boxHeight: 8,
           usePointStyle: true,
           callbacks: {
-            label: function(context: any) {
+            label: function(context: TooltipItem<'pie' | 'bar'>) {
               const label = context.dataset.label || '';
               const value = context.parsed;
-              return `${label}: ${typeof value === 'object' ? value.y || value : value} days`;
+              return `${label}: ${value} days`;
             }
           }
         }
       }
-    } as const;
+    };
 
-    const pieOptions = {
-      ...commonOptions,
-      cutout: '60%',
-      plugins: {
-        ...commonOptions.plugins,
-        legend: {
-          ...commonOptions.plugins.legend,
-          onClick: () => null // Disable legend click for pie chart
-        }
-      }
-    } as const;
-
-    const barOptions = {
-      ...commonOptions,
+    const barOptions: ChartOptions<'bar'> = {
+      ...baseOptions,
       scales: {
         y: {
           type: 'linear' as const,
           beginAtZero: true,
           grid: {
             color: 'rgba(0, 0, 0, 0.04)',
-            drawBorder: false,
+            display: true
           },
           ticks: {
             font: {
               family: "'Inter', sans-serif",
-              weight: 'normal'
+              weight: 'normal' as FontSpec['weight']
             },
             padding: 8,
-            callback: function(value: any) {
-              return value + ' days';
+            callback: function(this: Scale<CoreScaleOptions>, tickValue: number | string) {
+              return `${tickValue} days`;
             }
           },
           border: {
-            dash: [4, 4] as number[]
+            dash: [4, 4]
           }
         },
         x: {
@@ -294,19 +297,19 @@ function LeaveViewContent() {
           ticks: {
             font: {
               family: "'Inter', sans-serif",
-              weight: 'bold'
+              weight: 'bold' as FontSpec['weight']
             },
             padding: 8
           }
         }
       },
       plugins: {
-        ...commonOptions.plugins,
+        ...baseOptions.plugins,
         legend: {
-          ...commonOptions.plugins.legend,
+          ...baseOptions.plugins?.legend,
           labels: {
-            ...commonOptions.plugins.legend.labels,
-            generateLabels: function(chart: any) {
+            ...baseOptions.plugins?.legend?.labels,
+            generateLabels: function(chart: ChartJS) {
               const original = ChartJS.defaults.plugins.legend.labels.generateLabels(chart);
               return original.map(label => ({
                 ...label,
@@ -316,7 +319,19 @@ function LeaveViewContent() {
           }
         }
       }
-    } as const;
+    };
+
+    const pieOptions: ChartOptions<'pie'> = {
+      ...baseOptions,
+      cutout: '60%',
+      plugins: {
+        ...baseOptions.plugins,
+        legend: {
+          ...baseOptions.plugins?.legend,
+          onClick: () => null // Disable legend click for pie chart
+        }
+      }
+    };
 
     return (
       <div className="relative h-full w-full">
@@ -341,73 +356,73 @@ function LeaveViewContent() {
     );
   };
 
-  const renderLeaveTypes = () => {
-    if (!leaveBalance) return null;
+  // const renderLeaveTypes = () => {
+  //   if (!leaveBalance) return null;
 
-    return (
-      <div className="bg-white rounded-3xl shadow-xl overflow-hidden mt-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-        <div className="p-8 border-b border-gray-100">
-          <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-600 bg-clip-text text-transparent">
-            Leave Type Details
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50/80">
-                <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                  Leave Type
-                </th>
-                <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                  Allocated
-                </th>
-                <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                  Used
-                </th>
-                <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                  Remaining
-                </th>
-                <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                  Pending
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {Object.entries(leaveBalance.balances).map(([type, balance]) => (
-                <tr key={type} className="hover:bg-gray-50/80 transition-colors group">
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {getLeaveTypeLabel(type)}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-base font-medium text-blue-600 opacity-90 group-hover:opacity-100">
-                      {balance.allocated}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-base font-medium text-rose-600 opacity-90 group-hover:opacity-100">
-                      {balance.used}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-base font-medium text-emerald-600 opacity-90 group-hover:opacity-100">
-                      {balance.remaining}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-base font-medium text-amber-600 opacity-90 group-hover:opacity-100">
-                      {balance.pending}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
+  //   return (
+  //     <div className="bg-white rounded-3xl shadow-xl overflow-hidden mt-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+  //       <div className="p-8 border-b border-gray-100">
+  //         <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-600 bg-clip-text text-transparent">
+  //           Leave Type Details
+  //         </h3>
+  //       </div>
+  //       <div className="overflow-x-auto">
+  //         <table className="w-full">
+  //           <thead>
+  //             <tr className="bg-gray-50/80">
+  //               <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+  //                 Leave Type
+  //               </th>
+  //               <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+  //                 Allocated
+  //               </th>
+  //               <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+  //                 Used
+  //               </th>
+  //               <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+  //                 Remaining
+  //               </th>
+  //               <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+  //                 Pending
+  //               </th>
+  //             </tr>
+  //           </thead>
+  //           <tbody className="bg-white divide-y divide-gray-100">
+  //             {Object.entries(leaveBalance.balances).map(([type, balance]) => (
+  //               <tr key={type} className="hover:bg-gray-50/80 transition-colors group">
+  //                 <td className="px-8 py-6 whitespace-nowrap">
+  //                   <div className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+  //                     {getLeaveTypeLabel(type)}
+  //                   </div>
+  //                 </td>
+  //                 <td className="px-8 py-6 whitespace-nowrap">
+  //                   <div className="text-base font-medium text-blue-600 opacity-90 group-hover:opacity-100">
+  //                     {balance.allocated}
+  //                   </div>
+  //                 </td>
+  //                 <td className="px-8 py-6 whitespace-nowrap">
+  //                   <div className="text-base font-medium text-rose-600 opacity-90 group-hover:opacity-100">
+  //                     {balance.used}
+  //                   </div>
+  //                 </td>
+  //                 <td className="px-8 py-6 whitespace-nowrap">
+  //                   <div className="text-base font-medium text-emerald-600 opacity-90 group-hover:opacity-100">
+  //                     {balance.remaining}
+  //                   </div>
+  //                 </td>
+  //                 <td className="px-8 py-6 whitespace-nowrap">
+  //                   <div className="text-base font-medium text-amber-600 opacity-90 group-hover:opacity-100">
+  //                     {balance.pending}
+  //                   </div>
+  //                 </td>
+  //               </tr>
+  //             ))}
+  //           </tbody>
+  //         </table>
+  //       </div>
+  //     </div>
+  //   );
+  // };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">

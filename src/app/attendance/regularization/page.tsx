@@ -9,12 +9,12 @@ import {
   FaCalendarAlt, 
   FaClock, 
   FaEdit, 
-  FaTrash, 
+  
   FaCheck, 
-  FaTimes,
+  
   FaClipboardCheck,
   FaSync,
-  FaFilter,
+  
   FaSearch,
   FaChevronDown,
   FaInfo,
@@ -163,8 +163,8 @@ function RegularizationContent() {
           throw new Error(data.message || 'Failed to fetch regularization history');
         }
       }
-    } catch (error: any) {
-      setRegularizationHistoryError(error.message || 'Failed to fetch regularization history');
+    } catch  {
+      setRegularizationHistoryError( 'Failed to fetch regularization history');
       setRegularizationHistory([]);
     } finally {
       setRegularizationHistoryLoading(false);
@@ -210,8 +210,8 @@ function RegularizationContent() {
       } else {
         throw new Error(data.message || 'Failed to submit regularization request');
       }
-    } catch (error: any) {
-      setRegularizationError(error.message || 'Failed to submit regularization request');
+    } catch  {
+      setRegularizationError('Failed to submit regularization request');
     } finally {
       setRegularizationLoading(false);
     }

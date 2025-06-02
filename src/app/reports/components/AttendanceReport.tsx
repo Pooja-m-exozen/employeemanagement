@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { FaFileExcel, FaFilePdf, FaDownload, FaCalendar, FaClock, FaChevronLeft } from 'react-icons/fa';
+import { FaFileExcel, FaFilePdf,  FaCalendar, FaClock, FaChevronLeft } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Image from 'next/image';
 
 interface AttendanceRecord {
   _id: string;
@@ -36,9 +37,8 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
   selectedYear,
   handleMonthChange,
   handleYearChange,
-  handleViewRecord,
+  
   handleBack,
-  fetchReportData,
   formatDate,
   formatTime,
 }) => {
@@ -93,15 +93,8 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
     doc.save(`attendance_report_${selectedMonth}_${selectedYear}.pdf`);
   };
 
-  const calculateStatistics = () => {
-    const totalDays = attendanceData.length;
-    const presentDays = attendanceData.filter(record => record.punchInTime && record.punchOutTime).length;
-    const absentDays = totalDays - presentDays;
-    
-    return { totalDays, presentDays, absentDays };
-  };
-
-  const stats = calculateStatistics();
+ 
+  // const stats = calculateStatistics();
 
   // Utility to extract time from ISO string
   const extractTime = (isoString: string) => {
@@ -289,7 +282,13 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
               {selectedRecord.punchInPhoto && (
                 <div className="flex flex-col items-start border-b pb-2">
                   <span className="font-medium text-gray-500 mb-1">Punch In Photo:</span>
-                  <img src={selectedRecord.punchInPhoto} alt="Punch In" className="rounded shadow max-h-40" />
+                  <Image 
+                    src={selectedRecord.punchInPhoto} 
+                    alt="Punch In" 
+                    width={300}
+                    height={200}
+                    className="rounded shadow object-contain"
+                  />
                 </div>
               )}
               <div className="flex justify-between">

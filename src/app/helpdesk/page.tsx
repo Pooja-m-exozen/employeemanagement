@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaFilter, FaSpinner, FaPaperPlane, FaTimesCircle } from 'react-icons/fa';
+import { FaPlus, FaSearch,  FaSpinner, FaPaperPlane, FaTimesCircle } from 'react-icons/fa';
 
 interface Ticket {
   id: string;
@@ -120,7 +120,10 @@ const HelpDeskPage = () => {
       <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-md mx-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon!</h2>
-          <p className="text-gray-600">Our help desk feature is currently under development. We're working hard to bring you a seamless support experience.</p>
+          <p className="text-gray-600">
+  Our help desk feature is currently under development. We&#39;re working hard to bring you a seamless support experience.
+</p>
+
           <div className="mt-6 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-medium">
             Launching Soon
           </div>
@@ -258,7 +261,7 @@ const HelpDeskPage = () => {
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                    {/* <div>
                       <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
                         Priority
                       </label>
@@ -273,7 +276,7 @@ const HelpDeskPage = () => {
                         <option value="High">High</option>
                         <option value="Urgent">Urgent</option>
                       </select>
-                    </div>
+                    </div> */}
                     <div>
                       <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
                         Category
