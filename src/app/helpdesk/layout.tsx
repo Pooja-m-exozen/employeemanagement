@@ -1,15 +1,23 @@
+'use client';
+
+import React from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Metadata } from 'next';
+import { useRouter } from 'next/navigation';
+import { isAuthenticated } from '@/services/auth';
+import { useEffect } from 'react';
 
-export const metadata: Metadata = {
-  title: 'Help Desk | Employee Management System',
-  description: 'Manage and track your support tickets',
-};
-
-export default function HelpDeskLayout({
+export default function DashboardRootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.replace('/login');
+    }
+  }, [router]);
+
   return <DashboardLayout>{children}</DashboardLayout>;
 } 

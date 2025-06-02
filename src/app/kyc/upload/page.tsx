@@ -317,6 +317,18 @@ export default function UploadDocuments() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* KYC Upload Title Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-xl shadow-lg max-w-7xl mx-auto mb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+            <FaUpload className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">KYC Document Upload</h1>
+            <p className="text-blue-100 mt-1">Submit and verify your identity documents securely</p>
+          </div>
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <motion.div
