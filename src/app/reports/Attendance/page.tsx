@@ -82,15 +82,15 @@ const AttendancePage = () => {
     });
   };
 
-  const formatTime = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Asia/Kolkata',
-    });
-  };
+  // const formatTime = (dateString: string) => {
+  //   if (!dateString) return 'N/A';
+  //   return new Date(dateString).toLocaleTimeString('en-US', {
+  //     hour: '2-digit',
+  //     minute: '2-digit',
+  //     hour12: true,
+  //     timeZone: 'Asia/Kolkata',
+  //   });
+  // };
 
   return (
     <DashboardLayout>
@@ -105,7 +105,6 @@ const AttendancePage = () => {
         handleBack={handleBack}
         fetchReportData={fetchAttendanceData}
         formatDate={formatDate}
-        formatTime={formatTime}
       />
     </DashboardLayout>
   );

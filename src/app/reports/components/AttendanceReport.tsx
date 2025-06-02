@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaFileExcel, FaFilePdf,  FaCalendar, FaClock, FaChevronLeft } from 'react-icons/fa';
+import { FaFileExcel, FaFilePdf,  FaCalendar,  FaChevronLeft } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -14,6 +14,9 @@ interface AttendanceRecord {
   punchInTime: string;
   punchOutTime: string;
   punchInPhoto: string;
+  punchInLatitude?: number;
+  punchInLongitude?: number;
+  status?: string;
 }
 
 interface AttendanceReportProps {
@@ -27,7 +30,6 @@ interface AttendanceReportProps {
   handleBack: () => void;
   fetchReportData: () => Promise<void>;
   formatDate: (dateString: string) => string;
-  formatTime: (dateString: string) => string;
 }
 
 const AttendanceReport: React.FC<AttendanceReportProps> = ({
@@ -40,7 +42,6 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
   
   handleBack,
   formatDate,
-  formatTime,
 }) => {
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
@@ -97,15 +98,23 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
   // const stats = calculateStatistics();
 
   // Utility to extract time from ISO string
-  const extractTime = (isoString: string) => {
-    if (!isoString) return 'N/A';
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Kolkata',
-    });
+  // const extractTime = (isoString: string) => {
+  //   if (!isoString) return 'N/A';
+  //   const date = new Date(isoString);
+  //   return date.toLocaleTimeString('en-GB', {
+  //     hour: '2-digit',
+  //     minute: '2-digit',
+  //     hour12: false,
+  //     timeZone: 'Asia/Kolkata',
+  //   });
+  // };
+
+  const formatTime = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    // Show the time portion as in the ISO string, without conversion
+    // Example: '2025-06-02T09:26:24.000Z' => '09:26:24'
+    const match = dateString.match(/T(\d{2}:\d{2}:\d{2})/);
+    return match ? match[1] : dateString;
   };
 
   return (
@@ -204,27 +213,21 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
                     {formatDate(record.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {record.projectName}
+                    {record.projectName || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <FaClock className="text-gray-400" />
-                      {extractTime(record.punchInTime)}
-                    </div>
+                    {formatTime(record.punchInTime)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <FaClock className="text-gray-400" />
-                      {extractTime(record.punchOutTime)}
-                    </div>
+                    {formatTime(record.punchOutTime)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      record.punchInTime && record.punchOutTime
+                      record.status === 'Present'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {record.punchInTime && record.punchOutTime ? 'Present' : 'Absent'}
+                      {record.status || (record.punchInTime && record.punchOutTime ? 'Present' : 'Absent')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -265,19 +268,19 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="font-medium text-gray-500">Project Name:</span>
-                <span className="text-gray-900">{selectedRecord.projectName}</span>
+                <span className="text-gray-900">{selectedRecord.projectName || 'N/A'}</span>
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="font-medium text-gray-500">Designation:</span>
-                <span className="text-gray-900">{selectedRecord.designation}</span>
+                <span className="text-gray-900">{selectedRecord.designation || 'N/A'}</span>
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="font-medium text-gray-500">Punch In Time:</span>
-                <span className="text-gray-900">{extractTime(selectedRecord.punchInTime)}</span>
+                <span className="text-gray-900">{formatTime(selectedRecord.punchInTime)}</span>
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="font-medium text-gray-500">Punch Out Time:</span>
-                <span className="text-gray-900">{extractTime(selectedRecord.punchOutTime)}</span>
+                <span className="text-gray-900">{formatTime(selectedRecord.punchOutTime)}</span>
               </div>
               {selectedRecord.punchInPhoto && (
                 <div className="flex flex-col items-start border-b pb-2">
@@ -294,11 +297,11 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
               <div className="flex justify-between">
                 <span className="font-medium text-gray-500">Status:</span>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  selectedRecord.punchInTime && selectedRecord.punchOutTime
+                  selectedRecord.status === 'Present'
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {selectedRecord.punchInTime && selectedRecord.punchOutTime ? 'Present' : 'Absent'}
+                  {selectedRecord.status || (selectedRecord.punchInTime && selectedRecord.punchOutTime ? 'Present' : 'Absent')}
                 </span>
               </div>
             </div>
