@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaUser, FaMapMarkerAlt, FaIdCard, FaSpinner, FaSave, FaExclamationCircle, FaCheckCircle, FaArrowLeft, FaGlobe, FaPhone, FaEnvelope, FaBirthdayCake, FaVenusMars, FaBuilding, FaCalendarAlt, FaUserTie, FaRing, FaTint, FaGraduationCap, FaLaptopHouse, FaLanguage, FaMoneyCheckAlt, FaUniversity, FaPhoneVolume, FaUserFriends, FaHeart, FaInfoCircle } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
@@ -219,7 +219,9 @@ export default function EditKYC() {
 
   const fetchKYCData = async () => {
     try {
-      const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295');
+      const employeeId = getEmployeeId();
+      if (!employeeId) throw new Error('Employee ID not found. Please login again.');
+      const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KYC data');
       }
@@ -342,7 +344,9 @@ export default function EditKYC() {
     setSuccess(null);
 
     try {
-      const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295', {
+      const employeeId = getEmployeeId();
+      if (!employeeId) throw new Error('Employee ID not found. Please login again.');
+      const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -396,6 +400,24 @@ export default function EditKYC() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <div
+          className="flex items-center gap-6 rounded-2xl px-8 py-8"
+          style={{
+            background: "linear-gradient(90deg, #1e5af6 0%, #173bbd 100%)",
+            color: "white",
+          }}
+        >
+          <div className="flex items-center justify-center w-16 h-16 bg-blue-500 bg-opacity-30 rounded-xl">
+            <FaIdCard className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">Edit KYC</h1>
+            <p className="text-lg opacity-90">Update and manage your KYC information</p>
+          </div>
+        </div>
+      </div>
+
       {/* Instructions Panel */}
       <div className="bg-blue-50 border-b border-blue-100">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -529,7 +551,7 @@ export default function EditKYC() {
                               type="text"
                               value={kycData.personalDetails.employeeId}
                               disabled
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-black"
                             />
                           </div>
 
@@ -550,7 +572,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -572,7 +594,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -593,7 +615,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -614,7 +636,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -635,7 +657,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             >
                               <option value="">Select Gender</option>
                               <option value="Male">Male</option>
@@ -662,7 +684,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -684,7 +706,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -706,7 +728,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -728,7 +750,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -749,7 +771,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -770,7 +792,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -791,7 +813,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -811,7 +833,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             >
                               <option value="">Select Status</option>
                               <option value="Single">Single</option>
@@ -838,7 +860,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -858,7 +880,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             >
                               <option value="">Select Work Type</option>
                               <option value="office">Office</option>
@@ -884,7 +906,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -905,7 +927,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
                         </div>
@@ -965,7 +987,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -989,7 +1011,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1013,7 +1035,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1037,7 +1059,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
                         </div>
@@ -1070,7 +1092,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1094,7 +1116,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1118,7 +1140,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1142,7 +1164,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
                         </div>
@@ -1181,7 +1203,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1202,7 +1224,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1223,7 +1245,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1244,7 +1266,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
                         </div>
@@ -1283,7 +1305,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1304,7 +1326,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1325,7 +1347,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
 
@@ -1345,7 +1367,7 @@ export default function EditKYC() {
                                   },
                                 })
                               }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
                         </div>
@@ -1385,7 +1407,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             >
                               <option value="">Select ID Type</option>
                               <option value="Aadhar">Aadhar</option>
@@ -1412,7 +1434,7 @@ export default function EditKYC() {
                                 })
                               }
                               required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             />
                           </div>
                         </div>

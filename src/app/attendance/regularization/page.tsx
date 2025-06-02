@@ -21,7 +21,7 @@ import {
   FaChevronLeft,
   FaChevronRight
 } from 'react-icons/fa';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
@@ -147,31 +147,16 @@ function RegularizationContent() {
       setRegularizationHistoryLoading(true);
       setRegularizationHistoryError(null);
 
-      // For development, use mock data
-      if (process.env.NODE_ENV === 'development') {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-        const mockHistory: RegularizationHistoryItem[] = Array.from({ length: 10 }, (_, i) => ({
-          date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          status: ['Present', 'Half Day', 'Work From Home'][Math.floor(Math.random() * 3)],
-          punchInTime: '09:00',
-          punchOutTime: '18:00',
-          reason: 'System issue with attendance marking',
-          appliedOn: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
-          actionStatus: ['Pending', 'Approved', 'Rejected'][Math.floor(Math.random() * 3)]
-        }));
-        setRegularizationHistory(mockHistory);
-        return;
-      }
-
-      const response = await fetch('https://cafm.zenapi.co.in/api/attendance/EFMS3295/regularization-history');
+      const employeeId = getEmployeeId();
+      const response = await fetch(`https://cafm.zenapi.co.in/api/attendance/${employeeId}/regularization-history`);
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch regularization history');
       }
 
-      if (data.success && Array.isArray(data.history)) {
-        setRegularizationHistory(data.history);
+      if (data.success && Array.isArray(data.data?.regularizations)) {
+        setRegularizationHistory(data.data.regularizations);
       } else {
         setRegularizationHistory([]);
         if (!data.success) {
@@ -193,37 +178,26 @@ function RegularizationContent() {
     setRegularizationSuccess(null);
 
     try {
-      // For development, simulate API call
-      if (process.env.NODE_ENV === 'development') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setRegularizationSuccess('Regularization request submitted successfully!');
-        setRegularizationForm({
-          date: '',
-          punchInTime: '',
-          punchOutTime: '',
-          reason: '',
-          status: 'Present'
-        });
-        setShowForm(false);
-        fetchRegularizationHistory();
-        return;
-      }
-
-      const response = await fetch('https://cafm.zenapi.co.in/api/attendance/regularize', {
+      // Always call the real API (removed development check)
+      const employeeId = getEmployeeId();
+      const response = await fetch(`https://cafm.zenapi.co.in/api/attendance/${employeeId}/regularize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          employeeId: 'EFMS3295',
-          ...regularizationForm,
+          date: regularizationForm.date,
+          punchInTime: regularizationForm.punchInTime,
+          punchOutTime: regularizationForm.punchOutTime,
+          reason: regularizationForm.reason,
+          status: regularizationForm.status
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setRegularizationSuccess('Regularization request submitted successfully!');
+        setRegularizationSuccess(data.message || 'Regularization request submitted successfully!');
         setRegularizationForm({
           date: '',
           punchInTime: '',
@@ -390,7 +364,7 @@ function RegularizationContent() {
                       onChange={handleInputChange}
                       required
                       max={new Date().toISOString().split('T')[0]}
-                      className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-black"
                     />
                   </div>
                 </div>
@@ -405,7 +379,7 @@ function RegularizationContent() {
                     value={regularizationForm.status}
                     onChange={handleInputChange}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-black"
                   >
                     <option value="">Select Status</option>
                     <option value="Present">Present</option>
@@ -427,7 +401,7 @@ function RegularizationContent() {
                       value={regularizationForm.punchInTime}
                       onChange={handleInputChange}
                       required
-                      className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-black"
                     />
                   </div>
                 </div>
@@ -445,7 +419,7 @@ function RegularizationContent() {
                       value={regularizationForm.punchOutTime}
                       onChange={handleInputChange}
                       required
-                      className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-black"
                     />
                   </div>
                 </div>
@@ -462,7 +436,7 @@ function RegularizationContent() {
                   onChange={handleInputChange}
                   required
                   rows={4}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-black"
                   placeholder="Please provide a detailed reason for attendance regularization..."
                 />
               </div>

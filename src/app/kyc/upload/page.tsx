@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FaUpload, FaSpinner, FaCheckCircle, FaTimesCircle, FaFileAlt, FaExclamationCircle, FaInfoCircle, FaArrowLeft, FaIdCard, FaIdBadge, FaPassport, FaUserCircle, FaQuestionCircle } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DocumentUpload {
@@ -96,6 +96,12 @@ export default function UploadDocuments() {
     const doc = documents[type];
     if (!doc.file) return;
 
+    const employeeId = getEmployeeId();
+    if (!employeeId) {
+      setGlobalError('Employee ID not found. Please login again.');
+      return;
+    }
+
     setDocuments(prev => ({
       ...prev,
       [type]: { ...prev[type], uploading: true, error: null }
@@ -106,7 +112,7 @@ export default function UploadDocuments() {
       formData.append('file', doc.file);
       formData.append('type', type);
 
-      const response = await fetch('https://cafm.zenapi.co.in/api/kyc/EFMS3295/upload-document', {
+      const response = await fetch(`https://cafm.zenapi.co.in/api/kyc/${employeeId}/upload-document`, {
         method: 'POST',
         body: formData
       });
@@ -311,6 +317,18 @@ export default function UploadDocuments() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* KYC Upload Title Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-xl shadow-lg max-w-7xl mx-auto mb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+            <FaUpload className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">KYC Document Upload</h1>
+            <p className="text-blue-100 mt-1">Submit and verify your identity documents securely</p>
+          </div>
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <motion.div

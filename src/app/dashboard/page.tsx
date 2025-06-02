@@ -33,64 +33,11 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showRegularizationModal, setShowRegularizationModal] = useState(false);
-  const [showTicketModal, setShowTicketModal] = useState(false);
-  const [leaveRequestForm, setLeaveRequestForm] = useState({
-    leaveType: '',
-    startDate: '',
-    endDate: '',
-    numberOfDays: 1,
-    isHalfDay: false,
-    halfDayType: null as string | null,
-    reason: '',
-    emergencyContact: '',
-    attachments: [] as File[],
-  });
-  const [submittingRequest, setSubmittingRequest] = useState(false);
-  const [requestError, setRequestError] = useState<string | null>(null);
-  const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
-
-  // Regularization Form State
-  const [regularizationForm, setRegularizationForm] = useState({
-    date: '',
-    punchInTime: '',
-    punchOutTime: '',
-    reason: '',
-    status: 'Present',
-  });
-  const [regularizationLoading, setRegularizationLoading] = useState(false);
-  const [regularizationError, setRegularizationError] = useState<string | null>(null);
-  const [regularizationSuccess, setRegularizationSuccess] = useState<string | null>(null);
-
-  // Upload Document Form State
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadType, setUploadType] = useState('');
-  const [uploadDesc, setUploadDesc] = useState('');
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   // State for analytics view and chart type
   const [analyticsView, setAnalyticsView] = useState<AnalyticsViewType>('attendance');
   const [attendanceChartType, setAttendanceChartType] = useState<ChartType>('bar');
   const [leaveChartType, setLeaveChartType] = useState<ChartType>('bar');
-
-  // Department stats state
-  const [departmentStats, setDepartmentStats] = useState<DepartmentStats | null>(null);
-  const [departmentStatsLoading, setDepartmentStatsLoading] = useState(true);
-  const [departmentStatsError, setDepartmentStatsError] = useState<string | null>(null);
-
-  // Ticket Form State
-  const [ticketForm, setTicketForm] = useState({
-    subject: '',
-    description: '',
-    priority: 'Medium',
-  });
-  const [ticketLoading, setTicketLoading] = useState(false);
-  const [ticketSuccess, setTicketSuccess] = useState('');
-  const [ticketError, setTicketError] = useState('');
 
   // Update time every minute
   useEffect(() => {
@@ -99,6 +46,7 @@ export default function Dashboard() {
     }, 60000);
     return () => clearInterval(timer);
   }, []);
+
 
   const getWelcomeMessage = () => {
     const day = currentTime.getDay();
@@ -162,26 +110,9 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch department stats
-  const fetchDepartmentStats = async () => {
-    try {
-      setDepartmentStatsLoading(true);
-      const stats = await getDashboardData('DEPARTMENT_STATS_ENDPOINT', currentMonth, currentYear);
-      setDepartmentStats(stats as unknown as DepartmentStats);
-      setDepartmentStatsError(null);
-    } catch (error) {
-      console.error('Error fetching department stats:', error);
-      setDepartmentStatsError('Failed to fetch department statistics');
-      setDepartmentStats(null);
-    } finally {
-      setDepartmentStatsLoading(false);
-    }
-  };
-
   // Initial data fetch on component mount
   useEffect(() => {
     fetchData();
-    fetchDepartmentStats();
 
     // Poll every 5 minutes
     const pollInterval = setInterval(() => {
@@ -223,33 +154,7 @@ export default function Dashboard() {
     </div>
   );
 
-  const RefreshButton = () => (
-    <button
-      onClick={() => {
-        setRefreshing(true);
-        fetchData(false);
-      }}
-      className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white text-gray-600
-        rounded-full text-sm font-medium transition-all duration-300 hover:shadow-md
-        border border-gray-200 hover:border-gray-300"
-      disabled={refreshing}
-    >
-      <svg
-        className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-        />
-      </svg>
-      {refreshing ? 'Refreshing...' : 'Refresh'}
-    </button>
-  );
+  
 
   // Colors for leave types
   const leaveColors = {
@@ -352,15 +257,19 @@ export default function Dashboard() {
     plugins: {
       legend: {
         position: 'top',
-        align: 'start',
+        align: 'center',
         labels: {
-          boxWidth: 8,
-          boxHeight: 8,
-          padding: 20,
+          boxWidth: 10,
+          boxHeight: 10,
+          padding: 8,
+          usePointStyle: true,
+          pointStyle: 'circle',
           font: {
-            size: 12,
-            family: "'Geist', sans-serif"
-          }
+            size: 13,
+            family: "'Geist', sans-serif",
+            weight: 'bold'
+          },
+          color: '#334155'
         }
       },
       tooltip: {
@@ -459,6 +368,13 @@ export default function Dashboard() {
     </div>
   );
 
+  const leaveTypeLabels: Record<LeaveType, string> = {
+    EL: 'Earned Leave',
+    CL: 'Casual Leave',
+    SL: 'Sick Leave',
+    CompOff: 'Comp Off',
+  };
+
   const renderAttendanceChart = () => {
     if (!monthlyStats?.data) return null;
 
@@ -542,18 +458,24 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-800">
-              Attendance Analytics for {currentMonth === 0 ? 'All Months' : `${monthNames[currentMonth - 1]} ${currentYear}`}
+              {analyticsView === 'attendance'
+                ? `Attendance Analytics for ${currentMonth === 0 ? 'All Months' : `${monthNames[currentMonth - 1]} ${currentYear}`}`
+                : leaveBalance
+                  ? `Leave Balance for ${leaveBalance.employeeName}`
+                  : 'Leave Analytics'}
             </h3>
           </div>
-
-          <div className="w-full relative" style={{ height: attendanceChartType === 'bar' ? '400px' : undefined }}>
-            {attendanceChartType === 'bar' ? (
-              <Bar data={chartData} options={barChartOptions} />
-            ) : (
-              <div className="w-[320px] h-[320px] mx-auto">
-                <Pie data={pieData} options={pieChartOptions} />
-              </div>
-            )}
+          <div className="mb-4 flex justify-end">{renderMonthSelector()}</div>
+          <div className="w-full h-[300px] relative flex flex-row">
+            <div className="flex-1">
+              {attendanceChartType === 'bar' ? (
+                <Bar data={chartData} options={barChartOptions} />
+              ) : (
+                <div className="w-[320px] h-[320px] mx-auto">
+                  <Pie data={pieData} options={pieChartOptions} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -640,83 +562,6 @@ export default function Dashboard() {
     );
   };
 
-  const renderDepartmentChart = () => {
-    if (!departmentStats?.data) return null;
-
-    const chartData: ChartData<'bar'> = {
-      labels: departmentStats.data.map(stat => stat.departmentName),
-      datasets: [
-        {
-          label: 'Total Employees',
-          data: departmentStats.data.map(stat => stat.totalEmployees),
-          backgroundColor: 'rgba(54, 162, 235, 0.6)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1,
-        },
-        {
-          label: 'Present Today',
-          data: departmentStats.data.map(stat => stat.presentToday),
-          backgroundColor: 'rgba(75, 192, 192, 0.6)',
-          borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1,
-        },
-        {
-          label: 'On Leave Today',
-          data: departmentStats.data.map(stat => stat.onLeaveToday),
-          backgroundColor: 'rgba(255, 159, 64, 0.6)',
-          borderColor: 'rgba(255, 159, 64, 1)',
-          borderWidth: 1,
-        }
-      ]
-    };
-
-    const options: ChartOptions<'bar'> = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top' as const,
-        },
-        title: {
-          display: true,
-          text: 'Department-wise Employee Distribution',
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Number of Employees'
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Departments'
-          }
-        }
-      },
-    };
-
-    return (
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="text-lg font-semibold mb-4">Department Statistics</h3>
-        {departmentStatsLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : departmentStatsError ? (
-          <div className="text-red-500 text-center py-4">{departmentStatsError}</div>
-        ) : (
-          <div className="h-[400px]">
-            <Bar data={chartData} options={options} />
-          </div>
-        )}
-      </div>
-    );
-  };
-
   const renderChart = () => {
     if (analyticsView === 'attendance') {
       return renderAttendanceChart();
@@ -773,90 +618,24 @@ export default function Dashboard() {
     </div>
   );
 
-  const handleRequestLeaveChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setLeaveRequestForm(prev => ({
-        ...prev,
-        [name]: checked,
-        halfDayType: name === 'isHalfDay' && !checked ? null : prev.halfDayType,
-      }));
-    } else {
-      setLeaveRequestForm(prev => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+  const handleRequestLeave = () => {
+    router.push('/leave-management/request');
   };
 
-  const handleSubmitLeaveRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmittingRequest(true);
-    setRequestError(null);
-    setRequestSuccess(null);
-    try {
-      await submitLeaveRequest(employeeId || '', leaveRequestForm);
-      setRequestSuccess('Leave request submitted successfully!');
-      setLeaveRequestForm({
-        leaveType: '',
-        startDate: '',
-        endDate: '',
-        numberOfDays: 1,
-        isHalfDay: false,
-        halfDayType: null,
-        reason: '',
-        emergencyContact: '',
-        attachments: [],
-      });
-      setTimeout(() => setShowLeaveModal(false), 1500);
-    } catch (err: any) {
-      setRequestError(err.message || 'Failed to submit leave request');
-    } finally {
-      setSubmittingRequest(false);
-    }
+  const handleRegularization = () => {
+    router.push('/attendance/regularization');
   };
 
-  const handleRegularizationChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setRegularizationForm(prev => ({ ...prev, [name]: value }));
+  const handleUploadDocument = () => {
+    router.push('/kyc/upload');
   };
 
-  const handleRegularizationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegularizationLoading(true);
-    setRegularizationError(null);
-    setRegularizationSuccess(null);
-    try {
-      await submitRegularization(employeeId || '', regularizationForm);
-      setRegularizationSuccess('Attendance regularization request submitted successfully!');
-      setRegularizationForm({ date: '', punchInTime: '', punchOutTime: '', reason: '', status: 'Present' });
-      setTimeout(() => setShowRegularizationModal(false), 1500);
-    } catch (error: any) {
-      setRegularizationError(error.message || 'Failed to submit regularization request');
-    } finally {
-      setRegularizationLoading(false);
-    }
+  const handleRaiseTicket = () => {
+    router.push('/helpdesk');
   };
 
-  const handleUploadDocument = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setUploadLoading(true);
-    setUploadError(null);
-    setUploadSuccess(null);
-    try {
-      if (!uploadFile) throw new Error('Please select a file');
-      await uploadDocument(employeeId || '', uploadFile, uploadType, uploadDesc);
-      setUploadSuccess('Document uploaded successfully!');
-      setUploadFile(null);
-      setUploadType('');
-      setUploadDesc('');
-      setTimeout(() => setShowUploadModal(false), 1500);
-    } catch (error: any) {
-      setUploadError(error.message || 'Failed to upload document');
-    } finally {
-      setUploadLoading(false);
-    }
+  const handleViewTickets = () => {
+    router.push('/helpdesk');
   };
 
   const handleViewReports = () => {
@@ -899,435 +678,118 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-0 px-2 md:pt-0 md:px-4 relative overflow-x-hidden">
-      {showCelebration && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 animate-fade-in">
-          <Confetti width={window.innerWidth} height={window.innerHeight} numberOfPieces={400} recycle={false} />
-          <div className="text-center p-8 rounded-2xl shadow-xl bg-white/90 border-4 border-yellow-300 animate-bounce-in">
-            <h2 className="text-4xl font-extrabold text-yellow-500 mb-4 drop-shadow-lg">
-              {celebrationMessage?.split('\n')[0]}
-            </h2>
-            <p className="text-lg text-gray-700 font-medium italic">
-              {celebrationMessage?.split('\n')[1]}
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-b-2xl shadow p-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-white text-2xl font-bold">Welcome back, {userDetails?.fullName || <span className="inline-block h-6 w-32 bg-blue-300 rounded animate-pulse align-middle">&nbsp;</span>}</h1>
+          <p className="text-blue-100">{getWelcomeMessage()}</p>
+        </div>
+        <div className="flex gap-3">
+          <button className="bg-white text-blue-600 font-semibold px-4 py-2 rounded shadow hover:bg-blue-50" onClick={handleViewTickets}>View My Tickets</button>
+          <button className="bg-white text-blue-600 font-semibold px-4 py-2 rounded shadow hover:bg-blue-50" onClick={handleViewReports}>View Reports</button>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-72 p-6 flex flex-col gap-4">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-gray-700">Quick Actions</h2>
+            <p className="text-gray-500 text-sm">
+              Welcome! Use the quick actions below to manage your tasks efficiently.
             </p>
           </div>
-        </div>
-      )}
-
-      {/* Welcome Section */}
-      <div className="mt-0 mb-5">
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-3 shadow flex flex-col md:flex-row md:items-center md:justify-between gap-3 relative overflow-hidden text-white">
-          <div className="space-y-0.5 z-10">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-white/20 rounded-full flex items-center justify-center shadow">
-                <span className="text-lg">👋</span>
-              </div>
-              <div>
-                <h1 className="text-base font-semibold">
-                  Welcome back,{' '}
-                  <span className="text-lg font-bold text-blue-200">
-                    {userDetails?.fullName || (
-                      <span className="inline-block h-5 w-28 bg-blue-300 rounded animate-pulse align-middle">&nbsp;</span>
-                    )}
-                  </span>
-                </h1>
-                <p className="text-xs opacity-90 mt-0.5">{getWelcomeMessage()}</p>
-              </div>
+          {/* Request Leave */}
+          <div className="bg-blue-500 text-white rounded-xl shadow flex items-start gap-3 p-4 hover:scale-[1.02] transition-transform cursor-pointer" onClick={handleRequestLeave}>
+            <div className="p-2 bg-white/20 rounded-lg">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
-            {userDetails && (
-              <div className="flex flex-wrap gap-1.5">
-                <span className="bg-white/30 text-white px-2 py-0.5 rounded-full text-xs font-medium shadow border border-white/40 backdrop-blur-sm">
-                  {userDetails.designation} • {userDetails.department}
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2 z-10">
-            <button className="bg-white text-blue-600 px-3 py-1.5 rounded-lg shadow-md hover:bg-blue-50 transition font-medium text-xs">View My Tickets</button>
-            <button className="bg-blue-500 text-white px-3 py-1.5 rounded-lg shadow-md hover:bg-blue-600 transition font-medium text-xs">View Reports</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
-        <button
-          className="px-5 py-2.5 bg-white text-indigo-600 rounded-lg hover:bg-blue-50 transition-all duration-300 font-medium text-sm shadow-md hover:shadow-lg flex items-center gap-2 transform hover:-translate-y-1"
-        >
-          <FaTicketAlt className="text-indigo-500" /> View My Tickets
-        </button>
-        <button
-          onClick={handleViewReports}
-          className="px-5 py-2.5 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-300 font-medium text-sm shadow-md hover:shadow-lg border border-white/30 flex items-center gap-2 transform hover:-translate-y-1"
-        >
-          <FaFileAlt className="text-white/80" /> View Reports
-        </button>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 p-4 mb-8">
-        {/* Reusable Card Component */}
-        {[
-          {
-            title: "Attendance",
-            subtitle: "This Month",
-            icon: <FaUserClock className="text-blue-600 text-2xl" />,
-            bgFrom: "from-blue-50",
-            bgTo: "to-blue-100",
-            value: "18 / 22",
-            label: "Present / Working Days",
-            progress: "82%",
-            progressColor: "bg-blue-500",
-            footerText: "+2 days vs last month",
-            borderColor: "border-blue-200",
-            hoverBg: "hover:bg-blue-50"
-          },
-          {
-            title: "Leave Balance",
-            icon: <FaCalendarCheck className="text-emerald-600 text-2xl" />,
-            bgFrom: "from-emerald-50",
-            bgTo: "to-emerald-100",
-            value: "12 / 20",
-            label: "Used / Allocated",
-            progress: "60%",
-            progressColor: "bg-emerald-500",
-            footerText: "8 days remaining",
-            borderColor: "border-emerald-200",
-            hoverBg: "hover:bg-emerald-50"
-          },
-          {
-            title: "Attendance Regularization",
-            icon: <FaClipboardList className="text-amber-600 text-2xl" />,
-            bgFrom: "from-amber-50",
-            bgTo: "to-amber-100",
-            value: "15 / 03 / 01",
-            label: "Requested / Approved / Rejected",
-            progress: "60%",
-            progressColor: "bg-amber-500",
-            footerText: "8 days remaining",
-            borderColor: "border-amber-200",
-            hoverBg: "hover:bg-amber-50"
-          },
-          {
-            title: "Leave",
-            subtitle: "This Month",
-            icon: <FaClipboardCheck className="text-purple-600 text-2xl" />,
-            bgFrom: "from-purple-50",
-            bgTo: "to-purple-100",
-            value: "2",
-            label: "Approved",
-            progress: "82%",
-            progressColor: "bg-purple-500",
-            footerText: "1 request pending",
-            borderColor: "border-purple-200",
-            hoverBg: "hover:bg-purple-50"
-          },
-        ].map((card, index) => (
-          <div
-            key={index}
-            className={`group bg-white rounded-xl p-6 shadow-sm hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border ${card.borderColor} ${card.hoverBg}`}
-          >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} shadow-md p-4 rounded-full transform group-hover:scale-110 transition-transform duration-300`}>
-                {card.icon}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">{card.title}</p>
-                {card.subtitle && <h3 className="text-base font-semibold text-gray-700">{card.subtitle}</h3>}
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{card.value}</h2>
-                <p className="text-xs text-gray-500">{card.label}</p>
-              </div>
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${card.progressColor} transition-all rounded-full group-hover:animate-pulse`}
-                  style={{ width: card.progress }}
-                />
-              </div>
-              <p className="text-xs font-medium text-gray-500 mt-1">{card.footerText}</p>
+            <div>
+              <div className="font-bold text-base">Request Leave</div>
+              <div className="text-xs opacity-90">Submit a leave request for approval.</div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mb-6">
-        <h2 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <FaPlusCircle className="text-indigo-500" /> Quick Actions
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <button 
-            onClick={() => setShowLeaveModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-indigo-300 group"
-          >
-            <div className="p-3 rounded-full bg-indigo-100 text-indigo-600 mb-3 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <FaRegCalendarPlus className="text-xl" />
+          {/* Attendance Regularization */}
+          <div className="bg-orange-500 text-white rounded-xl shadow flex items-start gap-3 p-4 hover:scale-[1.02] transition-transform cursor-pointer" onClick={handleRegularization}>
+            <div className="p-2 bg-white/20 rounded-lg">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M9 17v-2a4 4 0 118 0v2m-4 4h.01M12 3v4m0 0a4 4 0 00-4 4v4a4 4 0 004 4h0a4 4 0 004-4v-4a4 4 0 00-4-4z" />
+              </svg>
             </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Request Leave</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowRegularizationModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-amber-300 group"
-          >
-            <div className="p-3 rounded-full bg-amber-100 text-amber-600 mb-3 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
-              <FaClipboardList className="text-xl" />
+            <div>
+              <div className="font-bold text-base">Attendance Regularization</div>
+              <div className="text-xs opacity-90">Request corrections to your attendance.</div>
             </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-amber-600 transition-colors">Regularize Attendance</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowUploadModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-300 group"
-          >
-            <div className="p-3 rounded-full bg-emerald-100 text-emerald-600 mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-              <FaFileUpload className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">Upload Document</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowTicketModal(true)}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-purple-300 group"
-          >
-            <div className="p-3 rounded-full bg-purple-100 text-purple-600 mb-3 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-              <FaTicketAlt className="text-xl" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-purple-600 transition-colors">Raise Ticket</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Dashboard Analytics Section */}
-      <div className="mb-6 bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-            <span className="text-2xl">📈</span>
-            Dashboard Analytics
-          </h2>
-          {refreshing && <LoadingSpinner />}
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-           <div className="flex gap-3">
-            <button
-              onClick={() => setAnalyticsView('attendance')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${analyticsView === 'attendance' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            >
-              Attendance Analytics
-            </button>
-            <button
-              onClick={() => setAnalyticsView('leave')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${analyticsView === 'leave' ? 'bg-blue-500 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            >
-              Leave Analytics
-            </button>
-           </div>
-           <div className="flex gap-2">
-             {renderChartTypeToggle()}
-           </div>
-        </div>
-        <div className="relative w-full h-[400px] max-w-3xl mx-auto">
-          <div className="w-full h-full">
-            {renderChart()}
           </div>
-        </div>
-      </div>
+          {/* Upload Document */}
+          <div className="bg-green-500 text-white rounded-xl shadow flex items-start gap-3 p-4 hover:scale-[1.02] transition-transform cursor-pointer" onClick={handleUploadDocument}>
+            <div className="p-2 bg-white/20 rounded-lg">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-base">Upload Document</div>
+              <div className="text-xs opacity-90">Upload important documents securely.</div>
+            </div>
+          </div>
+          {/* Raise Ticket */}
+          <div className="bg-purple-500 text-white rounded-xl shadow flex items-start gap-3 p-4 hover:scale-[1.02] transition-transform cursor-pointer" onClick={handleRaiseTicket}>
+            <div className="p-2 bg-white/20 rounded-lg">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M9 17v-2a4 4 0 118 0v2m-4 4h.01M12 3v4m0 0a4 4 0 00-4 4v4a4 4 0 004 4h0a4 4 0 004-4v-4a4 4 0 00-4-4z" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-base">Raise Ticket</div>
+              <div className="text-xs opacity-90">Report an issue or request support.</div>
+            </div>
+          </div>
+        </aside>
 
-      {/* Modals */}
-      {showLeaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md border border-gray-200 animate-fade-in-up">
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-hidden">
+          <div className="bg-white rounded-xl shadow p-6 h-full flex flex-col">
+            {/* Tabs and Controls */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <span className="p-1.5 bg-indigo-100 text-indigo-600 rounded-md">
-                  <FaRegCalendarPlus className="text-lg" />
-                </span>
-                Request Leave
-              </h3>
-              <button 
-                onClick={() => setShowLeaveModal(false)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleSubmitLeaveRequest} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-700">Leave Type</label>
-                <select 
-                  name="leaveType" 
-                  value={leaveRequestForm.leaveType} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                  required
-                >
-                  <option value="">Select Leave Type</option>
-                  <option value="EL">Earned Leave</option>
-                  <option value="SL">Sick Leave</option>
-                  <option value="CL">Casual Leave</option>
-                  <option value="CompOff">Comp Off</option>
-                </select>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1.5 text-gray-700">From</label>
-                  <input 
-                    type="date" 
-                    name="startDate" 
-                    value={leaveRequestForm.startDate} 
-                    onChange={handleRequestLeaveChange} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                    required 
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1.5 text-gray-700">To</label>
-                  <input 
-                    type="date" 
-                    name="endDate" 
-                    value={leaveRequestForm.endDate} 
-                    onChange={handleRequestLeaveChange} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                    required 
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2 items-center bg-gray-50 p-3 rounded-lg">
-                <input 
-                  type="checkbox" 
-                  id="isHalfDay"
-                  name="isHalfDay" 
-                  checked={leaveRequestForm.isHalfDay} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="isHalfDay" className="text-sm text-gray-700">Half Day</label>
-                {leaveRequestForm.isHalfDay && (
-                  <select 
-                    name="halfDayType" 
-                    value={leaveRequestForm.halfDayType || ''} 
-                    onChange={handleRequestLeaveChange} 
-                    className="ml-2 border border-gray-300 rounded px-2 py-1 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">Select</option>
-                    <option value="First Half">First Half</option>
-                    <option value="Second Half">Second Half</option>
-                  </select>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-700">Reason</label>
-                <textarea 
-                  name="reason" 
-                  value={leaveRequestForm.reason} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                  rows={3}
-                  required 
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-700">Emergency Contact</label>
-                <input 
-                  name="emergencyContact" 
-                  value={leaveRequestForm.emergencyContact} 
-                  onChange={handleRequestLeaveChange} 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" 
-                />
-              </div>
-              {requestError && <div className="text-red-600 text-sm p-2 bg-red-50 rounded-lg">{requestError}</div>}
-              {requestSuccess && <div className="text-green-600 text-sm p-2 bg-green-50 rounded-lg">{requestSuccess}</div>}
-              <div className="flex justify-end gap-3 pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setShowLeaveModal(false)} 
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2" 
-                  disabled={submittingRequest}
-                >
-                  {submittingRequest ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Submitting...
-                    </>
-                  ) : 'Submit Request'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {showRegularizationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4 text-black">Request Regularization</h3>
-            <form onSubmit={handleRegularizationSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-black">Date</label>
-                <input type="date" name="date" value={regularizationForm.date} onChange={handleRegularizationChange} className="w-full border rounded px-3 py-2 text-black" required />
-              </div>
               <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1 text-black">Punch In Time</label>
-                  <input type="time" name="punchInTime" value={regularizationForm.punchInTime} onChange={handleRegularizationChange} className="w-full border rounded px-3 py-2 text-black" required />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1 text-black">Punch Out Time</label>
-                  <input type="time" name="punchOutTime" value={regularizationForm.punchOutTime} onChange={handleRegularizationChange} className="w-full border rounded px-3 py-2 text-black" required />
-                </div>
+                <button
+                  onClick={() => setAnalyticsView('attendance')}
+                  className={`px-4 py-1 rounded-full font-semibold transition-colors ${
+                    analyticsView === 'attendance'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-700 hover:bg-blue-50'
+                  }`}
+                >
+                  Attendance Analytics
+                </button>
+                <button
+                  onClick={() => setAnalyticsView('leave')}
+                  className={`px-4 py-1 rounded-full font-semibold transition-colors ${
+                    analyticsView === 'leave'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-700 hover:bg-blue-50'
+                  }`}
+                >
+                  Leave Analytics
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-black">Reason</label>
-                <textarea name="reason" value={regularizationForm.reason} onChange={handleRegularizationChange} className="w-full border rounded px-3 py-2 text-black" required />
+              <div className="flex gap-2 items-center">
+                {renderChartTypeToggle()}
               </div>
-              {regularizationError && <div className="text-red-600 text-sm">{regularizationError}</div>}
-              {regularizationSuccess && <div className="text-green-600 text-sm">{regularizationSuccess}</div>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowRegularizationModal(false)} className="px-4 py-2 bg-red-500 text-white rounded">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-amber-500 text-white rounded" disabled={regularizationLoading}>{regularizationLoading ? 'Submitting...' : 'Submit'}</button>
+            </div>
+            {/* Chart and Legend */}
+            <div className="flex flex-col">
+              <div className="flex-1">
+                {renderChart()}
               </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4 text-black">Upload Document</h3>
-            <form onSubmit={handleUploadDocument} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-black">Document Type</label>
-                <input value={uploadType} onChange={e => setUploadType(e.target.value)} className="w-full border rounded px-3 py-2 text-black" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-black">Description</label>
-                <input value={uploadDesc} onChange={e => setUploadDesc(e.target.value)} className="w-full border rounded px-3 py-2 text-black" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-black">File</label>
-                <input type="file" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="w-full border rounded px-3 py-2 text-black" required />
-              </div>
-              {uploadError && <div className="text-red-600 text-sm">{uploadError}</div>}
-              {uploadSuccess && <div className="text-green-600 text-sm">{uploadSuccess}</div>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowUploadModal(false)} className="px-4 py-2 bg-red-500 text-white rounded">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-emerald-500 text-white rounded" disabled={uploadLoading}>{uploadLoading ? 'Uploading...' : 'Upload'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        </main>
+      </div>
     </div>
   );
 }

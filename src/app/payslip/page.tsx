@@ -5,6 +5,8 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { FaSpinner, FaExclamationCircle, FaSync, FaDownload, FaPrint, FaCalendarAlt, FaUser, FaMoneyBillWave, FaFileInvoiceDollar } from 'react-icons/fa';
 import domtoimage from 'dom-to-image';
 import jsPDF from 'jspdf';
+import { isAuthenticated, getEmployeeId } from '@/services/auth';
+import { useRouter } from 'next/navigation';
 
 interface Deductions {
   pf: number;
@@ -46,6 +48,7 @@ interface PayslipResponse {
 }
 
 const PayslipPage = () => {
+  const router = useRouter();
   const [payslip, setPayslip] = useState<Payslip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +56,22 @@ const PayslipPage = () => {
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
     fetchPayslip();
-  }, [selectedMonth]);
+  }, [router]);
 
   const fetchPayslip = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`https://cafm.zenapi.co.in/api/payslip/EFMS3295/${selectedMonth}`);
+      const employeeId = getEmployeeId();
+      if (!employeeId) {
+        throw new Error('Employee ID not found. Please login again.');
+      }
+      const response = await fetch(`https://cafm.zenapi.co.in/api/payslip/${employeeId}/${selectedMonth}`);
       const data: PayslipResponse = await response.json();
 
       if (data.message === "Payslip retrieved successfully." && data.payslip) {
@@ -214,7 +225,7 @@ const PayslipPage = () => {
                 <FaFileInvoiceDollar className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Payslip Dashboard</h1>
+                <h1 className="text-3xl font-bold text-black">Payslip Dashboard</h1>
                 <p className="text-blue-100 mt-1">View and download your monthly salary details</p>
               </div>
             </div>
@@ -255,15 +266,15 @@ const PayslipPage = () => {
             <div className="flex items-start gap-6">
               <img src="/exozen_logo.png" alt="Company Logo" className="h-16 w-auto" />
               <div className="flex-1">
-                <h2 className="text-xl font-bold">M/s Exozen Private Limited.,</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="text-xl font-bold text-black">M/s Exozen Private Limited.,</h2>
+                <p className="text-sm text-gray-900 mt-1">
                   No.25/1, 4th Floor, Shantala Nagar, Brigade Road, Museum Road,<br />
                   Ashok Nagar, Bengaluru, Karnataka - 560025
                 </p>
               </div>
             </div>
             <div className="text-center mt-4">
-              <h3 className="text-lg font-semibold">Pay Slip for the month of {new Date(payslip.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h3>
+              <h3 className="text-lg font-semibold text-black">Pay Slip for the month of {new Date(payslip.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h3>
             </div>
           </div>
 
@@ -272,26 +283,26 @@ const PayslipPage = () => {
             <table className="w-full border-collapse">
               <tbody>
                 <tr>
-                  <td className="border border-gray-300 p-2 w-1/4">Employee ID:</td>
-                  <td className="border border-gray-300 p-2">{payslip.employeeId}</td>
-                  <td className="border border-gray-300 p-2 w-1/4">Paid Days:</td>
-                  <td className="border border-gray-300 p-2">{payslip.presentDays}</td>
+                  <td className="border border-gray-300 p-2 w-1/4 text-black font-medium">Employee ID:</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.employeeId}</td>
+                  <td className="border border-gray-300 p-2 w-1/4 text-black font-medium">Paid Days:</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.presentDays}</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">Employee Name:</td>
-                  <td className="border border-gray-300 p-2">SHIVANYA D N</td>
-                  <td className="border border-gray-300 p-2">LOP Days:</td>
-                  <td className="border border-gray-300 p-2">{payslip.absentDays}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Employee Name:</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">SHIVANYA D N</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">LOP Days:</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.absentDays}</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">Designation:</td>
-                  <td className="border border-gray-300 p-2">IOT Developer</td>
-                  <td className="border border-gray-300 p-2">ESIC No:</td>
-                  <td className="border border-gray-300 p-2">EXEMTED</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Designation:</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">IOT Developer</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">ESIC No:</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">EXEMTED</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">UAN No:</td>
-                  <td className="border border-gray-300 p-2">EXEMTED</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">UAN No:</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">EXEMTED</td>
                   <td className="border border-gray-300 p-2"></td>
                   <td className="border border-gray-300 p-2"></td>
                 </tr>
@@ -302,54 +313,54 @@ const PayslipPage = () => {
             <table className="w-full border-collapse mt-6">
               <thead>
                 <tr>
-                  <th className="border border-gray-300 p-2 text-left w-1/4">Earnings</th>
-                  <th className="border border-gray-300 p-2 text-left w-1/4">Amount</th>
-                  <th className="border border-gray-300 p-2 text-left w-1/4">Deductions</th>
-                  <th className="border border-gray-300 p-2 text-left w-1/4">Amount</th>
+                  <th className="border border-gray-300 p-2 text-left w-1/4 text-black">Earnings</th>
+                  <th className="border border-gray-300 p-2 text-left w-1/4 text-black">Amount</th>
+                  <th className="border border-gray-300 p-2 text-left w-1/4 text-black">Deductions</th>
+                  <th className="border border-gray-300 p-2 text-left w-1/4 text-black">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="border border-gray-300 p-2">Basic+VDA</td>
-                  <td className="border border-gray-300 p-2">{payslip.basicPlusVDA.toFixed(2)}</td>
-                  <td className="border border-gray-300 p-2">PF</td>
-                  <td className="border border-gray-300 p-2">{payslip.deductions.pf.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Basic+VDA</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.basicPlusVDA.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">PF</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.deductions.pf.toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">HRA</td>
-                  <td className="border border-gray-300 p-2">{payslip.hra.toFixed(2)}</td>
-                  <td className="border border-gray-300 p-2">ESI</td>
-                  <td className="border border-gray-300 p-2">{payslip.deductions.esi.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">HRA</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.hra.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">ESI</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.deductions.esi.toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">Conveyance Allowance</td>
-                  <td className="border border-gray-300 p-2">{payslip.conveyanceAllowance.toFixed(2)}</td>
-                  <td className="border border-gray-300 p-2">PT</td>
-                  <td className="border border-gray-300 p-2">{payslip.deductions.pt.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Conveyance Allowance</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.conveyanceAllowance.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">PT</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.deductions.pt.toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">Other Allowances</td>
-                  <td className="border border-gray-300 p-2">{payslip.otherAllowance.toFixed(2)}</td>
-                  <td className="border border-gray-300 p-2">Salary Adv.</td>
-                  <td className="border border-gray-300 p-2">0.00</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Other Allowances</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.otherAllowance.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Salary Adv.</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">0.00</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">Spl. Allowance</td>
-                  <td className="border border-gray-300 p-2">{payslip.specialAllowance.toFixed(2)}</td>
-                  <td className="border border-gray-300 p-2">Uniform Ded.</td>
-                  <td className="border border-gray-300 p-2">{payslip.deductions.uniformDeduction.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Spl. Allowance</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.specialAllowance.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Uniform Ded.</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.deductions.uniformDeduction.toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2">Wash. Allowances</td>
-                  <td className="border border-gray-300 p-2">0.00</td>
-                  <td className="border border-gray-300 p-2">Room rent</td>
-                  <td className="border border-gray-300 p-2">{payslip.deductions.roomRent.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Wash. Allowances</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">0.00</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">Room rent</td>
+                  <td className="border border-gray-300 p-2 text-black font-medium">{payslip.deductions.roomRent.toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 p-2 font-semibold">Total Amount</td>
-                  <td className="border border-gray-300 p-2 font-semibold">{payslip.totalEarnings.toFixed(2)}</td>
-                  <td className="border border-gray-300 p-2 font-semibold">Total Deductions</td>
-                  <td className="border border-gray-300 p-2 font-semibold">{payslip.totalDeductions.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-semibold">Total Amount</td>
+                  <td className="border border-gray-300 p-2 text-black font-semibold">{payslip.totalEarnings.toFixed(2)}</td>
+                  <td className="border border-gray-300 p-2 text-black font-semibold">Total Deductions</td>
+                  <td className="border border-gray-300 p-2 text-black font-semibold">{payslip.totalDeductions.toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>
@@ -357,8 +368,8 @@ const PayslipPage = () => {
             {/* Net Pay */}
             <div className="mt-6 border border-gray-300 p-4">
               <div className="flex justify-between items-center">
-                <span className="font-semibold">Net Pay:</span>
-                <span className="font-semibold">{payslip.netPay.toFixed(2)} (Twenty Three Thousand Five Hundred only)</span>
+                <span className="font-semibold text-black">Net Pay:</span>
+                <span className="font-semibold text-black">{payslip.netPay.toFixed(2)} (Twenty Three Thousand Five Hundred only)</span>
               </div>
             </div>
 

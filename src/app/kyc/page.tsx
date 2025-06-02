@@ -604,26 +604,28 @@ export default function ViewKYC() {
       {/* Left Navigation */}
       <LeftNavigation />
 
-      {/* Main Content */}
-      <div className="flex-1 bg-white">
-        <MobileHeader />
-        <div className="p-6 lg:p-10">
-          {showInstructions && <Instructions />}
-          <ProgressBar />
-          
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="max-w-7xl mx-auto"
-            >
-              {selectedTab === 0 && (
-                <div className="space-y-8">
-                  <motion.div 
-                    className="p-8"
+          {/* Main Content */}
+          <div className="p-4 lg:p-6">
+            {/* Modern KYC Header */}
+            <div className="rounded-2xl mb-8 p-6 flex items-center gap-5 bg-gradient-to-r from-blue-500 to-blue-800 shadow-lg">
+              <div className="bg-blue-600 bg-opacity-30 rounded-xl p-4 flex items-center justify-center">
+                <FaIdCard className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-1">View KYC</h1>
+                <p className="text-white text-base opacity-90">View and manage your KYC verification details</p>
+              </div>
+            </div>
+            {/* Dynamic Content */}
+            {showInstructions && <Instructions />}
+            <ProgressBar />
+            
+            {/* Content sections based on selected tab */}
+            <div className="space-y-6 mt-6">
+              <AnimatePresence mode="wait">
+                {selectedTab === 0 && (
+                  <motion.div
+                    key="personal"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
@@ -1054,10 +1056,10 @@ export default function ViewKYC() {
                       ))}
                     </div>
                   </motion.div>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -187,7 +187,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
       {
         icon: <FaTasks />,
         label: 'Reports',
-        href: '/reports'
+        subItems: [
+          {
+            icon: <FaCalendarAlt />,
+            label: 'Attendance Report',
+            href: '/reports/Attendance'
+          },
+          {
+            icon: <FaFileAlt />,
+            label: 'Leave Report',
+            href: '/reports/leave'
+          }
+        ]
       },
       {
         icon: <FaHeadset />,
