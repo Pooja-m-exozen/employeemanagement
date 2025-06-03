@@ -22,16 +22,20 @@ const AttendancePage = () => {
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [employeeId, setEmployeeId] = useState<string>('');
 
   const fetchAttendanceData = useCallback(async () => {
     setLoading(true);
     try {
-      const employeeId = getEmployeeId();
-      if (!employeeId) {
-        throw new Error('Employee ID not found. Please login again.');
+      const id = getEmployeeId();
+      if (!id) {
+        router.push('/login');
+        return;
       }
+      setEmployeeId(id);
+      
       const response = await fetch(
-        `https://cafm.zenapi.co.in/api/attendance/report/monthly/employee?employeeId=${employeeId}&month=${selectedMonth}&year=${selectedYear}`
+        `https://cafm.zenapi.co.in/api/attendance/report/monthly/employee?employeeId=${id}&month=${selectedMonth}&year=${selectedYear}`
       );
       const data = await response.json();
       
@@ -46,7 +50,7 @@ const AttendancePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, router]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -105,9 +109,10 @@ const AttendancePage = () => {
         handleBack={handleBack}
         fetchReportData={fetchAttendanceData}
         formatDate={formatDate}
+        employeeId={employeeId}
       />
     </DashboardLayout>
   );
 };
 
-export default AttendancePage; 
+export default AttendancePage;

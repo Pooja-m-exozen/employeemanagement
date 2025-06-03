@@ -27,6 +27,19 @@ interface LeaveRecord {
   lastUpdated: string;
 }
 
+interface LeaveHistoryResponse {
+  success: boolean;
+  leaveHistory: Array<{
+    startDate: string;
+    leaveType: string;
+    numberOfDays: number;
+    isHalfDay: boolean;
+    halfDayType?: string;
+    status: string;
+    reason: string;
+  }>;
+}
+
 interface LeaveReportProps {
   loading: boolean;
   leaveData: {
@@ -38,6 +51,19 @@ interface LeaveReportProps {
   } | null;
   handleBack: () => void;
   formatDate: (date: string) => string;
+}
+
+interface LeaveHistoryData {
+  success: boolean;
+  leaveHistory: Array<{
+    startDate: string;
+    leaveType: string;
+    numberOfDays: number;
+    isHalfDay: boolean;
+    halfDayType?: string;
+    status: string;
+    reason: string;
+  }>;
 }
 
 const LeaveReport: React.FC<LeaveReportProps> = ({
@@ -70,31 +96,82 @@ const LeaveReport: React.FC<LeaveReportProps> = ({
     XLSX.writeFile(workbook, `leave_report_${selectedYear}.xlsx`);
   };
 
-  const downloadPDF = () => {
-    if (!leaveData?.leaveHistory) return;
-
+  const downloadPDF = async () => {
     const doc = new jsPDF();
+    let yPosition = 25;
+
+    // Set title
+    doc.setFontSize(20);
+    doc.text(`Leave Report - ${selectedYear}`, 14, 15);
+
+    // Draw main attendance table first
     const tableColumn = ["Employee Name", "Leave Type", "Start Date", "End Date", "Days", "Status"];
-    const tableRows = leaveData.leaveHistory.map(record => [
+    const tableRows = leaveData?.leaveHistory.map(record => [
       record.employeeName,
       record.leaveType,
       formatDate(record.startDate),
       formatDate(record.endDate),
       record.numberOfDays,
       record.status,
-    ]);
+    ]) || [];
 
-    doc.setFontSize(20);
-    doc.text(`Leave Report - ${selectedYear}`, 14, 15);
-    
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 25,
+      startY: yPosition,
       theme: 'grid',
       styles: { fontSize: 8 },
       headStyles: { fillColor: [41, 128, 185] },
+      didDrawPage: (data) => {
+        yPosition = (data.cursor?.y ?? yPosition) + 10;
+      }
     });
+
+    // Add leave history table
+    if (leaveData?.employeeId) {
+      try {
+        const leaveHistoryRes = await fetch(
+          `https://cafm.zenapi.co.in/api/leave/history/${leaveData.employeeId}`
+        );
+        const leaveHistoryData: LeaveHistoryData = await leaveHistoryRes.json();
+
+        if (leaveHistoryData.success && leaveHistoryData.leaveHistory.length > 0) {
+          // Add "Leave History" subtitle with some spacing
+          doc.setFontSize(12);
+          doc.setTextColor(41, 128, 185);
+          doc.text('Leave History', 14, yPosition);
+
+          // Leave history table headers and data
+          const leaveHeaders = [['Date', 'Leave Type', 'Duration', 'Status', 'Reason']];
+          const leaveRows = leaveHistoryData.leaveHistory.map(leave => [
+            new Date(leave.startDate).toLocaleDateString(),
+            leave.leaveType,
+            leave.isHalfDay ? `${leave.numberOfDays} (${leave.halfDayType})` : leave.numberOfDays,
+            leave.status,
+            leave.reason
+          ]);
+
+          // Draw leave history table with proper spacing
+          autoTable(doc, {
+            head: leaveHeaders,
+            body: leaveRows,
+            startY: yPosition + 5,
+            theme: 'grid',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            columnStyles: {
+              0: { cellWidth: 30 },
+              1: { cellWidth: 25 },
+              2: { cellWidth: 30 },
+              3: { cellWidth: 25 },
+              4: { cellWidth: 'auto' }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching leave history:', error);
+      }
+    }
 
     doc.save(`leave_report_${selectedYear}.pdf`);
   };
@@ -247,4 +324,4 @@ const LeaveReport: React.FC<LeaveReportProps> = ({
   );
 };
 
-export default LeaveReport; 
+export default LeaveReport;

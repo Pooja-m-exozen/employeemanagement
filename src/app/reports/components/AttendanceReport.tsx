@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { FaFileExcel, FaFilePdf,  FaCalendar,  FaChevronLeft } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaFileExcel, FaFilePdf, FaCalendar, FaChevronLeft, FaCalendarAlt, FaCheckCircle, FaTimesCircle, FaPercentage } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Image from 'next/image';
+import { isHoliday, formatUtcTime, calculateHoursUtc, transformAttendanceRecord } from '../../utils/attendanceUtils';
 
 interface AttendanceRecord {
   _id: string;
@@ -19,6 +20,23 @@ interface AttendanceRecord {
   status?: string;
 }
 
+interface LeaveBalance {
+  EL: number;
+  CL: number;
+  SL: number;
+  CompOff: number;
+}
+
+interface LeaveRecord {
+  leaveId: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  numberOfDays: number;
+  status: string;
+  reason: string;
+}
+
 interface AttendanceReportProps {
   loading: boolean;
   attendanceData: AttendanceRecord[];
@@ -30,6 +48,7 @@ interface AttendanceReportProps {
   handleBack: () => void;
   fetchReportData: () => Promise<void>;
   formatDate: (dateString: string) => string;
+  employeeId: string;
 }
 
 const AttendanceReport: React.FC<AttendanceReportProps> = ({
@@ -39,19 +58,109 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
   selectedYear,
   handleMonthChange,
   handleYearChange,
-  
   handleBack,
   formatDate,
+  employeeId,
 }) => {
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [summary, setSummary] = useState<any>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  // Add government holidays (you can modify this list as needed)
+  const governmentHolidays = [
+    '2024-01-26', // Republic Day
+    '2024-03-25', // Holi
+    '2024-04-09', // Ram Navami
+    '2024-05-01', // Labor Day
+    '2024-08-15', // Independence Day
+    '2024-10-02', // Gandhi Jayanti
+    '2024-11-14', // Diwali
+    '2024-12-25', // Christmas
+  ];
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + 2 - i);
+
+  const isWeekend = (date: string) => {
+    const day = new Date(date).getDay();
+    return day === 0; // Only Sunday is weekend
+  };
+
+  // Helper to get all second and fourth Saturdays for a given month/year
+  const getSecondAndFourthSaturdays = (year: number, month: number) => {
+    const saturdays: string[] = [];
+    let count = 0;
+    for (let day = 1; day <= 31; day++) {
+      const date = new Date(year, month - 1, day);
+      if (date.getMonth() !== month - 1) break;
+      if (date.getDay() === 6) { // Saturday
+        count++;
+        if (count === 2 || count === 4) {
+          saturdays.push(date.toISOString().split('T')[0]);
+        }
+      }
+    }
+    return saturdays;
+  };
+
+  const isSecondOrFourthSaturday = (date: string, year: number, month: number) => {
+    const dateStr = date.split('T')[0];
+    const secondFourthSaturdays = getSecondAndFourthSaturdays(year, month);
+    return secondFourthSaturdays.includes(dateStr);
+  };
+
+  const isSunday = (date: string) => {
+    return new Date(date).getDay() === 0;
+  };
+
+  const isHoliday = (date: string) => {
+    const dateStr = date.split('T')[0];
+    return governmentHolidays.includes(dateStr);
+  };
+
+  const getDayStatus = (date: string, year: number, month: number) => {
+    if (isHoliday(date)) return 'Holiday';
+    if (isSunday(date)) return 'Holiday';
+    if (isSecondOrFourthSaturday(date, year, month)) return 'Holiday';
+    return 'Working Day';
+  };
+
+  const getAttendanceStatus = (record: AttendanceRecord | undefined, dayStatus: string) => {
+    if (dayStatus === 'Holiday') {
+      return 'Holiday';
+    }
+    if (!record) {
+      return 'Absent';
+    }
+    if (record.status) {
+      return record.status;
+    }
+    if (record.punchInTime && record.punchOutTime) {
+      return 'Present';
+    }
+    if (record.punchInTime && !record.punchOutTime) {
+      return 'Half Day';
+    }
+    return 'Absent';
+  };
+
+  // Helper to get status code for PDF/calendar
+  const getStatusCode = (record: AttendanceRecord | undefined, dayStatus: string) => {
+    if (dayStatus === 'Holiday') return 'H';
+    if (!record) return 'A';
+    if (record.status === 'Present' || (record.punchInTime && record.punchOutTime)) return 'P';
+    if (record.punchInTime && !record.punchOutTime) return 'P'; // Treat half day as present for code
+    return 'A';
+  };
+
+  // Transform attendanceData using the shared logic
+  const processedAttendanceData = attendanceData.map(transformAttendanceRecord);
 
   const downloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
@@ -68,51 +177,226 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
     XLSX.writeFile(workbook, `attendance_report_${selectedMonth}_${selectedYear}.xlsx`);
   };
 
-  const downloadPDF = () => {
+  const getDayType = (date: string, year: number, month: number) => {
+    const dateStr = date.split('T')[0];
+    if (governmentHolidays.includes(dateStr)) {
+      // Map specific holidays to their names
+      const holidayMap: { [key: string]: string } = {
+        '2024-01-26': 'Republic Day',
+        '2024-03-25': 'Holi',
+        '2024-04-09': 'Ram Navami',
+        '2024-05-01': 'Labor Day',
+        '2024-08-15': 'Independence Day',
+        '2024-10-02': 'Gandhi Jayanti',
+        '2024-11-14': 'Diwali',
+        '2024-12-25': 'Christmas',
+      };
+      return holidayMap[dateStr] || 'Government Holiday';
+    }
+    if (isSunday(date)) return 'Sunday';
+    if (isSecondOrFourthSaturday(date, year, month)) {
+      const dateObj = new Date(date);
+      const weekNumber = Math.ceil(dateObj.getDate() / 7);
+      return `${weekNumber === 2 ? '2nd' : '4th'} Saturday`;
+    }
+    return 'Working Day';
+  };
+
+  const downloadPDF = async () => {
     const doc = new jsPDF();
-    const tableColumn = ["Date", "Project", "Designation", "Check In", "Check Out"];
-    const tableRows = attendanceData.map(record => [
+    let yPosition = 15;
+
+    // First page - Header and Attendance Table
+    doc.addImage("/exozen_logo1.png", 'PNG', 15, yPosition, 25, 8);
+    doc.setFontSize(11);
+    doc.setTextColor(41, 128, 185);
+    doc.text(`Attendance Report - ${months[selectedMonth - 1]} ${selectedYear}`, 45, yPosition + 4);
+    doc.setFontSize(9);
+    doc.text(`Employee ID: ${employeeId}`, 45, yPosition + 8);
+
+    yPosition += 12;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, yPosition, 195, yPosition);
+    yPosition += 5;
+
+    // Attendance table
+    const tableColumn = ["Date", "Project", "Check In", "Check Out", "Day Type"];
+    const filteredRecords = processedAttendanceData.filter(record => {
+      const dateObj = new Date(record.date);
+      return dateObj.getMonth() === selectedMonth - 1 && dateObj.getFullYear() === selectedYear;
+    });
+
+    const tableRows = filteredRecords.map(record => [
       formatDate(record.date),
-      record.projectName,
-      record.designation,
+      record.projectName || 'N/A',
       formatTime(record.punchInTime),
       formatTime(record.punchOutTime),
+      getDayType(record.date, selectedYear, selectedMonth)
     ]);
 
-    doc.setFontSize(20);
-    doc.text(`Attendance Report - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 15);
-    
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 25,
+      startY: yPosition,
       theme: 'grid',
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [41, 128, 185] },
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontSize: 9,
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 35 }
+      }
     });
+
+    // Start second page
+    doc.addPage();
+    yPosition = 15;
+
+    // Add Monthly Summary section
+    doc.setFontSize(12);
+    doc.setTextColor(41, 128, 185);
+    doc.text('Monthly Summary', 15, yPosition);
+    yPosition += 10;
+
+    if (summary) {
+      const summaryTable = [
+        ['Working Days', 'Present Days', 'Absent Days', 'Attendance Rate'],
+        [
+          summary.workingDays || '0',
+          summary.presentDays || '0',
+          summary.absentDays || '0',
+          `${summary.workingDays ? ((summary.presentDays / summary.workingDays) * 100).toFixed(1) : 0}%`
+        ]
+      ];
+
+      autoTable(doc, {
+        head: [summaryTable[0]],
+        body: [summaryTable[1]],
+        startY: yPosition,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        columnStyles: {
+          0: { halign: 'center' },
+          1: { halign: 'center' },
+          2: { halign: 'center' },
+          3: { halign: 'center' }
+        },
+        margin: { left: 15 },
+        tableWidth: 180
+      });
+
+      // Add Leave Balance section
+      yPosition = (doc as any).lastAutoTable.finalY + 20;
+      doc.setFontSize(12);
+      doc.text('Leave Balances', 15, yPosition);
+      yPosition += 10;
+
+      if (summary.leaveBalances) {
+        const leaveTable = [
+          ['Leave Type', 'Balance'],
+          ['Earned Leave', summary.leaveBalances.EL || '0'],
+          ['Casual Leave', summary.leaveBalances.CL || '0'],
+          ['Sick Leave', summary.leaveBalances.SL || '0'],
+          ['Comp Off', summary.leaveBalances.CompOff || '0']
+        ];
+
+        autoTable(doc, {
+          head: [leaveTable[0]],
+          body: leaveTable.slice(1),
+          startY: yPosition,
+          theme: 'grid',
+          styles: { fontSize: 9, cellPadding: 4 },
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          columnStyles: {
+            0: { cellWidth: 90 },
+            1: { cellWidth: 90, halign: 'center' }
+          },
+          margin: { left: 15 }
+        });
+      }
+
+      // Add Leave History section
+      try {
+        const leaveRes = await fetch(
+          `https://cafm.zenapi.co.in/api/leave/history/${employeeId}`
+        );
+        const leaveData = await leaveRes.json();
+
+        if (leaveData.leaveHistory?.length > 0) {
+          yPosition = (doc as any).lastAutoTable.finalY + 20;
+          doc.setFontSize(12);
+          doc.text('Leave History', 15, yPosition);
+          yPosition += 10;
+
+          const leaveHeaders = [['Date', 'Leave Type', 'Days', 'Status', 'Reason']];
+          const leaveRows = leaveData.leaveHistory
+            .filter((leave: { isHalfDay: boolean }) => !leave.isHalfDay)
+            .map((leave: LeaveRecord) => [
+              new Date(leave.startDate).toLocaleDateString(),
+              leave.leaveType,
+              leave.numberOfDays,
+              leave.status,
+              leave.reason?.substring(0, 30) || ''
+            ]);
+
+          if (leaveRows.length > 0) {
+            autoTable(doc, {
+              head: leaveHeaders,
+              body: leaveRows,
+              startY: yPosition,
+              theme: 'grid',
+              styles: { fontSize: 8 },
+              headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+              columnStyles: {
+                0: { cellWidth: 30 },
+                1: { cellWidth: 30 },
+                2: { cellWidth: 20 },
+                3: { cellWidth: 30 },
+                4: { cellWidth: 70 }
+              },
+              margin: { left: 15 }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching leave history:', error);
+      }
+    }
 
     doc.save(`attendance_report_${selectedMonth}_${selectedYear}.pdf`);
   };
 
- 
-  // const stats = calculateStatistics();
-
-  // Utility to extract time from ISO string
-  // const extractTime = (isoString: string) => {
-  //   if (!isoString) return 'N/A';
-  //   const date = new Date(isoString);
-  //   return date.toLocaleTimeString('en-GB', {
-  //     hour: '2-digit',
-  //     minute: '2-digit',
-  //     hour12: false,
-  //     timeZone: 'Asia/Kolkata',
-  //   });
-  // };
+  useEffect(() => {
+    if (!employeeId || !selectedMonth || !selectedYear) return;
+    setSummaryLoading(true);
+    setSummaryError(null);
+    fetch(`https://cafm.zenapi.co.in/api/attendance/${employeeId}/monthly-stats?month=${selectedMonth}&year=${selectedYear}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setSummary(data.data);
+        } else {
+          setSummary(null);
+          setSummaryError('Failed to fetch summary');
+        }
+      })
+      .catch(() => {
+        setSummary(null);
+        setSummaryError('Failed to fetch summary');
+      })
+      .finally(() => setSummaryLoading(false));
+  }, [employeeId, selectedMonth, selectedYear]);
 
   const formatTime = (dateString: string) => {
     if (!dateString) return 'N/A';
-    // Show the time portion as in the ISO string, without conversion
-    // Example: '2025-06-02T09:26:24.000Z' => '09:26:24'
     const match = dateString.match(/T(\d{2}:\d{2}:\d{2})/);
     return match ? match[1] : dateString;
   };
@@ -140,6 +424,61 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Summary Stats */}
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FaCalendarAlt className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Working Days</h3>
+                <p className="text-2xl font-bold text-gray-900">{summary.workingDays || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <FaCheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Present Days</h3>
+                <p className="text-2xl font-bold text-gray-900">{summary.presentDays || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-100 rounded-lg">
+                <FaTimesCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Absent Days</h3>
+                <p className="text-2xl font-bold text-gray-900">{summary.absentDays || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <FaPercentage className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Attendance Rate</h3>
+                <p className="text-2xl font-bold text-gray-900">
+                  {summary.workingDays ? ((summary.presentDays / summary.workingDays) * 100).toFixed(1) : 0}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters and Actions */}
       <div className="flex flex-wrap gap-4 items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -191,61 +530,95 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : attendanceData.length > 0 ? (
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {attendanceData.map((record, index) => (
-                <tr 
-                  key={record._id || index}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDate(record.date)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {record.projectName || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatTime(record.punchInTime)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatTime(record.punchOutTime)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      record.status === 'Present'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {record.status || (record.punchInTime && record.punchOutTime ? 'Present' : 'Absent')}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => setSelectedRecord(record)}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      View Details
-                    </button>
-                  </td>
+        <>
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {attendanceData.map((record, index) => (
+                  <tr 
+                    key={record._id || index}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDate(record.date)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.projectName || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatTime(record.punchInTime)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatTime(record.punchOutTime)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        record.status === 'Present' 
+                          ? 'bg-green-100 text-green-800'
+                          : record.status === 'Absent'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {record.status || (record.punchInTime && record.punchOutTime ? 'Present' : 'Absent')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <button
+                        onClick={() => setSelectedRecord(record)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Monthly Summary Table moved here */}
+          {summary && (
+            <div className="mt-8">
+              <div className="flex items-center gap-3 mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Monthly Summary</h3>
+                <div className="flex-1 border-b border-gray-200"></div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Working Days</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Present Days</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Absent Days</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Days</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{summary.workingDays || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">{summary.presentDays || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">{summary.absentDays || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{summary.totalDays ?? summary.summary?.totalDays ?? ''}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-xl">
-          <p className="text-gray-500">No attendance records found for the selected period</p>
+        <div className="text-center py-6">
+          <p className="text-gray-500">No attendance records found for the selected month and year.</p>
         </div>
       )}
 
@@ -254,8 +627,8 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full relative animate-fade-in">
             <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl font-bold"
               onClick={() => setSelectedRecord(null)}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl font-bold"
               aria-label="Close"
             >
               &times;
@@ -312,4 +685,4 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({
   );
 };
 
-export default AttendanceReport; 
+export default AttendanceReport;

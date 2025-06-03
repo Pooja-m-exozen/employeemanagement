@@ -28,6 +28,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday} from 'date-fns';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import { calculateHoursUtc, transformAttendanceRecord } from '../../utils/attendanceUtils';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
@@ -109,23 +110,6 @@ interface StatusInfo {
 
 
 
-// Helper: format UTC time string as hh:mm AM/PM (no timezone conversion)
-function formatUtcTime(utcString: string | null): string | null {
-  if (!utcString) return null;
-  try {
-    const date = new Date(utcString);
-    // Get hours/minutes in UTC
-    let hours = date.getUTCHours();
-    const minutes = date.getUTCMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // 0 should be 12
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-  } catch {
-    return null;
-  }
-}
-
 // Helper: check if date is Sunday, 2nd/4th Saturday, or a government holiday
 const GOVT_HOLIDAYS = [
   // Add government holiday dates as 'YYYY-MM-DD' strings
@@ -146,23 +130,6 @@ function isHoliday(dateStr: string): boolean {
   // Government holidays
   if (GOVT_HOLIDAYS.includes(dateStr)) return true;
   return false;
-}
-
-// Helper to calculate hours worked from UTC times
-function calculateHoursUtc(punchInUtc: string | null, punchOutUtc: string | null): string {
-  if (!punchInUtc || !punchOutUtc) return '0';
-  try {
-    const inDate = new Date(punchInUtc);
-    const outDate = new Date(punchOutUtc);
-    // If punch out is before punch in (e.g., overnight), add 1 day
-    if (outDate < inDate) outDate.setUTCDate(outDate.getUTCDate() + 1);
-    const diffMs = outDate.getTime() - inDate.getTime();
-    const diffHrs = diffMs / (1000 * 60 * 60);
-    if (isNaN(diffHrs) || diffHrs < 0) return '0';
-    return diffHrs.toFixed(2);
-  } catch {
-    return '0';
-  }
 }
 
 function ViewAttendanceContent() {
@@ -196,34 +163,7 @@ function ViewAttendanceContent() {
         const data = await response.json();
         
         if (response.ok && data.attendance) {
-          const transformedActivities = data.attendance.map((record: Record<string, unknown>) => {
-            const dateStr = (record.date as string).split('T')[0];
-            let status = record.status as string;
-            if (isHoliday(dateStr)) status = 'Holiday';
-            return {
-              date: dateStr,
-              displayDate: format(new Date(record.date as string), 'EEE, MMM d, yyyy'),
-              status,
-              punchInTime: record.punchInTime ? formatUtcTime(record.punchInTime as string) : null,
-              punchOutTime: record.punchOutTime ? formatUtcTime(record.punchOutTime as string) : null,
-              punchInUtc: record.punchInTime as string || null,
-              punchOutUtc: record.punchOutTime as string || null,
-              punchInLocation: record.punchInLatitude && record.punchInLongitude ? {
-                latitude: record.punchInLatitude as number,
-                longitude: record.punchInLongitude as number
-              } : undefined,
-              punchOutLocation: record.punchOutLatitude && record.punchOutLongitude ? {
-                latitude: record.punchOutLatitude as number,
-                longitude: record.punchOutLongitude as number
-              } : undefined,
-              punchInPhoto: record.punchInPhoto as string,
-              punchOutPhoto: record.punchOutPhoto as string,
-              isLate: record.isLate as boolean || false,
-              remarks: record.remarks as string,
-              totalHoursWorked: calculateHoursUtc(record.punchInTime as string, record.punchOutTime as string)
-            };
-          });
-          
+          const transformedActivities = data.attendance.map(transformAttendanceRecord);
           setActivities(transformedActivities);
         } else {
           setActivities([]);
