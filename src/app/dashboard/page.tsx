@@ -6,6 +6,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar, Pie } from 'react-chartjs-2';
 import type { ChartData, ChartOptions } from 'chart.js';
 import { useUser } from '@/context/UserContext';
+import { useTheme } from "@/context/ThemeContext";
 
 import { getDashboardData, getMonthlyStats, getLeaveBalance } from '@/services/dashboard';
 import { getEmployeeId } from '@/services/auth';
@@ -286,7 +287,7 @@ export default function Dashboard() {
       labels: currentMonth === 0 ? monthNames : ['Monthly Attendance'],
       datasets: [
         {
-          label: 'Present Days',
+          label: 'Present ',
           data: currentMonth === 0 
             ? monthlyStats.data.monthlyPresent || Array(12).fill(0)
             : [monthlyStats.data.presentDays],
@@ -319,7 +320,7 @@ export default function Dashboard() {
           maxBarThickness: 32,
         },
         {
-          label: 'Absent Days',
+          label: 'Absent',
           data: currentMonth === 0 
             ? monthlyStats.data.monthlyAbsent || Array(12).fill(0)
             : [monthlyStats.data.absentDays],
@@ -358,36 +359,28 @@ export default function Dashboard() {
     };
 
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              {analyticsView === 'attendance'
-                ? `Attendance Analytics for ${currentMonth === 0 ? 'All Months' : `${monthNames[currentMonth - 1]} ${currentYear}`}`
-                : leaveBalance
-                  ? `Leave Balance for ${leaveBalance.employeeName}`
-                  : 'Leave Analytics'}
-            </h3>
-          </div>
-          <div className="mb-4 flex justify-end">{renderMonthSelector()}</div>
-          <div className="w-full h-[300px] relative flex flex-row">
-            <div className="flex-1">
-              {attendanceChartType === 'bar' ? (
-                <Bar data={chartData} options={barChartOptions} />
-              ) : (
-                <div className="w-[320px] h-[320px] mx-auto">
-                  <Pie data={pieData} options={pieChartOptions} />
-                </div>
-              )}
+      <div className="h-full">
+        <div className="h-full min-h-[400px] relative">
+          {attendanceChartType === 'bar' ? (
+            <Bar data={chartData} options={{
+              ...barChartOptions,
+              maintainAspectRatio: false,
+              responsive: true
+            }} />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="w-[320px] h-[320px]">
+                <Pie data={pieData} options={pieChartOptions} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
   };
 
   const renderLeaveChart = () => {
-    if (!leaveBalance) return <p className="text-center text-gray-500 h-[400px] flex items-center justify-center">No leave balance data available.</p>;
+    if (!leaveBalance) return null;
 
     const leaveTypes: LeaveType[] = ['EL', 'SL', 'CL', 'CompOff'];
     const leaveLabels = ['Earned Leave', 'Sick Leave', 'Casual Leave', 'Comp Off'];
@@ -443,24 +436,21 @@ export default function Dashboard() {
     };
 
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Leave Balance for {leaveBalance.employeeName}
-            </h3>
-            
-          </div>
-
-          <div className="w-full h-[300px] relative">
-            {leaveChartType === 'bar' ? (
-              <Bar data={chartData} options={barChartOptions} />
-            ) : (
-              <div className="w-[320px] h-[320px] mx-auto">
+      <div className="h-full">
+        <div className="h-full min-h-[400px] relative">
+          {leaveChartType === 'bar' ? (
+            <Bar data={chartData} options={{
+              ...barChartOptions,
+              maintainAspectRatio: false,
+              responsive: true
+            }} />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="w-[320px] h-[320px]">
                 <Pie data={pieData} options={pieChartOptions} />
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -562,8 +552,10 @@ export default function Dashboard() {
     );
   }
 
+  const { theme } = useTheme();
+
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-b-2xl shadow p-6 flex justify-between items-center">
         <div>
@@ -578,10 +570,10 @@ export default function Dashboard() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-72 p-6 flex flex-col gap-4">
+        <aside className={`w-72 p-6 flex flex-col gap-4 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="mb-4">
             <h2 className="text-lg font-bold text-gray-700">Quick Actions</h2>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-sm font-semibold">
               Welcome! Use the quick actions below to manage your tasks efficiently.
             </p>
           </div>
@@ -636,14 +628,14 @@ export default function Dashboard() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 overflow-hidden">
-          <div className="bg-white rounded-xl shadow p-6 h-full flex flex-col">
+        <main className="flex-1 p-6 overflow-y-auto">
+          <div className={`rounded-xl p-6 ${theme === 'dark' ? 'bg-gray-800 ring-1 ring-gray-700' : 'bg-white'} shadow-sm min-h-[calc(100vh-140px)]`}>
             {/* Tabs and Controls */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="flex gap-2">
                 <button
                   onClick={() => setAnalyticsView('attendance')}
-                  className={`px-4 py-1 rounded-full font-semibold transition-colors ${
+                  className={`px-4 py-1.5 rounded-full font-semibold transition-colors ${
                     analyticsView === 'attendance'
                       ? 'bg-blue-100 text-blue-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-blue-50'
@@ -653,7 +645,7 @@ export default function Dashboard() {
                 </button>
                 <button
                   onClick={() => setAnalyticsView('leave')}
-                  className={`px-4 py-1 rounded-full font-semibold transition-colors ${
+                  className={`px-4 py-1.5 rounded-full font-semibold transition-colors ${
                     analyticsView === 'leave'
                       ? 'bg-blue-100 text-blue-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-blue-50'
@@ -662,14 +654,25 @@ export default function Dashboard() {
                   Leave Analytics
                 </button>
               </div>
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-wrap gap-4 items-center justify-between sm:justify-end">
                 {renderChartTypeToggle()}
+                {renderMonthSelector()}
               </div>
             </div>
-            {/* Chart and Legend */}
-            <div className="flex flex-col">
-              <div className="flex-1">
-                {renderChart()}
+
+            {/* Chart Container */}
+            <div className={`relative overflow-hidden ${
+              theme === 'dark' 
+                ? 'bg-gray-800 ring-1 ring-gray-700' 
+                : 'bg-white'
+              } rounded-xl p-4 md:p-6`}>
+              <div className="min-h-[400px] md:min-h-[500px]">
+                <div className="absolute inset-0 p-4">
+                  {analyticsView === 'attendance' 
+                    ? renderAttendanceChart()
+                    : renderLeaveChart()
+                  }
+                </div>
               </div>
             </div>
           </div>

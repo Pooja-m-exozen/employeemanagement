@@ -334,8 +334,8 @@ function ViewAttendanceContent() {
   };
 
     return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      {/* Blue Gradient Header */}
+    <div className="max-w-7xl mx-auto space-y-8 py-8">
+      {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 mb-8 shadow-lg flex items-center justify-between">
             <div>
           <h2 className="text-3xl font-bold text-white">Monthly Overview</h2>
@@ -345,7 +345,7 @@ function ViewAttendanceContent() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Left: Graph + Instructions */}
-        <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+        <div className="rounded-xl shadow-sm border border-gray-200/30 p-6 flex flex-col items-center bg-card">
           {/* Attendance Distribution Graph */}
           <div className="w-48 h-48 flex items-center justify-center mb-6">
             <CircularProgressbar
@@ -361,7 +361,7 @@ function ViewAttendanceContent() {
                     </div>
           <div className="text-center text-gray-500 mb-6">Attendance Rate</div>
           {/* Instructions */}
-          <div className="w-full bg-gray-50 rounded-lg p-4 border">
+          <div className="w-full bg-muted rounded-lg p-4 border border-border">
             <h3 className="font-semibold text-gray-800 mb-2">Instructions & Notes</h3>
             <ul className="list-decimal list-inside text-sm text-gray-700 space-y-1">
               <li>Your attendance is automatically recorded when you punch in and out using the mobile app.</li>
@@ -376,7 +376,7 @@ function ViewAttendanceContent() {
               </div>
             </div>
         {/* Right: Calendar */}
-        <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+        <div className="rounded-xl shadow-sm border border-gray-200/30 p-6 flex flex-col items-center bg-card">
           <div className="flex items-center justify-between w-full mb-4">
             <h3 className="text-xl font-semibold text-gray-900">{format(selectedDate, 'MMMM yyyy')}</h3>
             {/* Calendar controls (prev, today, next) */}
@@ -510,10 +510,10 @@ function ViewAttendanceContent() {
                 <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
             </div>
-            <div className="overflow-x-auto rounded-xl">
+            <div className="overflow-x-auto">
           <table className="w-full">
-                <thead className="sticky top-0 bg-white z-10">
-                  <tr className="bg-gray-100 border-b border-gray-200">
+                <thead>
+                  <tr className="bg-muted">
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaCalendarAlt className="inline mr-1 text-blue-500" /> Date</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaCheckCircle className="inline mr-1 text-green-500" /> Status</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><FaSignInAlt className="inline mr-1 text-emerald-500" /> Punch In</th>
@@ -522,7 +522,7 @@ function ViewAttendanceContent() {
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
+                <tbody className="divide-y divide-border">
                   {paginatedActivities.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No records found</td>
@@ -698,4 +698,4 @@ export default function ViewAttendancePage() {
       <ViewAttendanceContent />
     </DashboardLayout>
   );
-} 
+}

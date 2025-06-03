@@ -6,7 +6,7 @@
 }
 
 .dark {
-  --background: #1a1a1a;
+  --background: #171717;
   --foreground: #ffffff;
 }
 
@@ -65,18 +65,31 @@ body {
   background-color: #c7d2fe;
 }
 
-/* Dark mode transitions */
+/* Update dark mode transitions */
 .dark-transition {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Dark mode specific styles */
-.dark .dark-card {
-  background-color: #2d2d2d;
-  border-color: #404040;
+/* Dark mode background classes */
+.dark .dark-bg-primary {
+  background-color: var(--background);
 }
 
-.dark .dark-text {
+.dark .dark-bg-secondary {
+  background-color: #1a1a1a;
+}
+
+.dark .dark-bg-card {
+  background-color: #1f1f1f;
+}
+
+/* Update Dark mode card styles */
+.dark .dark-card {
+  background-color: #1f1f1f;
+  border-color: #2d2d2d;
+}
+
+.dark .dark-text-primary {
   color: #ffffff;
 }
 
@@ -86,4 +99,23 @@ body {
 
 .dark .dark-border {
   border-color: #404040;
+}
+
+/* Dark mode gradients */
+.dark .dark-gradient {
+  background-image: linear-gradient(to right, rgb(30, 41, 59), rgb(51, 65, 85));
+}
+
+/* Add smooth transitions for theme changes */
+.theme-transition {
+  transition: background-color 0.3s ease-in-out,
+              border-color 0.3s ease-in-out,
+              color 0.3s ease-in-out;
+}
+
+/* Ensure all elements transition smoothly */
+* {
+  transition: background-color 0.3s ease-in-out,
+              border-color 0.3s ease-in-out,
+              color 0.3s ease-in-out;
 }

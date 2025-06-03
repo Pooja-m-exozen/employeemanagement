@@ -225,6 +225,7 @@ function MarkAttendanceContent() {
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -356,47 +357,10 @@ function MarkAttendanceContent() {
         </div>
       </div>
 
-      {/* Instructions Card */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <FaInfoCircle className="text-2xl text-blue-600" />
-          <h3 className="text-xl font-bold text-gray-800">Important Instructions</h3>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="p-4 bg-blue-50 rounded-xl">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="font-bold text-blue-600">1</span>
-              </div>
-              <h4 className="font-semibold text-gray-800">Enable Permissions</h4>
-            </div>
-            <p className="text-gray-600 text-sm">Allow camera and location access when prompted for accurate attendance marking.</p>
-          </div>
-          <div className="p-4 bg-blue-50 rounded-xl">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="font-bold text-blue-600">2</span>
-              </div>
-              <h4 className="font-semibold text-gray-800">Take Clear Photo</h4>
-            </div>
-            <p className="text-gray-600 text-sm">Ensure good lighting and face the camera directly for a clear identification photo.</p>
-          </div>
-          <div className="p-4 bg-blue-50 rounded-xl">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="font-bold text-blue-600">3</span>
-              </div>
-              <h4 className="font-semibold text-gray-800">Verify & Submit</h4>
-            </div>
-            <p className="text-gray-600 text-sm">Review your photo and confirm your location before marking attendance.</p>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content Grid */}
       <div className="grid md:grid-cols-2 gap-8">
         {/* Photo Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="rounded-xl shadow-sm border border-gray-200/30 p-8 bg-card">
           <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <FaCamera className="text-blue-600" />
             Photo Verification
@@ -448,14 +412,14 @@ function MarkAttendanceContent() {
         </div>
 
         {/* Status and Action Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="rounded-xl shadow-sm border border-gray-200/30 p-8 bg-card">
           <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <FaMapMarkerAlt className="text-blue-600" />
             Location Verification
           </h3>
           
           <div className="space-y-6">
-            <div className="p-4 bg-gray-50 rounded-xl">
+            <div className="p-4 bg-muted rounded-xl">
               <p className="text-gray-600 mb-2">
                 <FaInfoCircle className="inline mr-2 text-blue-600" />
                 Your device&apos;s location will be verified against your registered office location

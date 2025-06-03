@@ -335,7 +335,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
 
   return (
     <UserContext.Provider value={userDetails}>
-      <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         {/* Overlay for mobile */}
         {isMobileMenuOpen && (
           <div 
@@ -483,7 +483,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
           </header>
 
           {/* Main Content */}
-          <main className={`p-4 md:p-8 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'} min-h-screen overflow-y-auto overflow-x-hidden h-[calc(100vh-64px)]`}>
+          <main className={`p-4 md:p-8 min-h-screen overflow-y-auto overflow-x-hidden h-[calc(100vh-64px)] ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {children}
           </main>
         </div>

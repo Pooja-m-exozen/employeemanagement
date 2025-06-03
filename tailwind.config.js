@@ -10,12 +10,22 @@ module.exports = {
   theme: {
     extend: {
       backgroundColor: {
-        'dark': '#1a1a1a',
-        'dark-card': '#2d2d2d',
+        'dark': '#0a0a0a',
+        'dark-card': '#1f1f1f',
+        'dark-secondary': '#1a1a1a',
       },
-      textColor: {
-        'dark': '#ffffff',
-        'dark-secondary': '#a1a1aa',
+      colors: {
+        dark: {
+          DEFAULT: '#0a0a0a',
+          card: '#1f1f1f',
+          secondary: '#1a1a1a',
+        }
+      },
+      borderColor: {
+        dark: {
+          DEFAULT: '#2d2d2d',
+          secondary: '#404040',
+        }
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

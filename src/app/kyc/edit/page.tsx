@@ -389,7 +389,7 @@ export default function EditKYC() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <FaSpinner className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
           <p className="mt-4 text-gray-600">Loading your information...</p>
@@ -399,7 +399,7 @@ export default function EditKYC() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="mb-8">
         <div
           className="flex items-center gap-6 rounded-2xl px-8 py-8"
@@ -419,26 +419,26 @@ export default function EditKYC() {
       </div>
 
       {/* Instructions Panel */}
-      <div className="bg-blue-50 border-b border-blue-100">
+      <div className="border-b border-[rgba(255,255,255,0.1)]">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 rounded-lg bg-opacity-10 backdrop-blur-sm bg-blue-600">
               <FaInfoCircle className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-blue-900">KYC Information Guidelines</h2>
-              <ul className="mt-2 space-y-2 text-sm text-blue-700">
+              <h2 className="text-lg font-bold text-black">KYC Information Guidelines</h2>
+              <ul className="mt-2 space-y-2 text-sm text-black">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                  Fill in all required fields marked with an asterisk (*).
+                  <span className="font-medium">Fill in all required fields marked with an asterisk (*).</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                  Ensure all documents are clear and legible before uploading.
+                  <span className="font-medium">Ensure all documents are clear and legible before uploading.</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                  Double-check your bank details to avoid payment issues.
+                  <span className="font-medium">Double-check your bank details to avoid payment issues.</span>
                 </li>
               </ul>
             </div>
@@ -450,7 +450,7 @@ export default function EditKYC() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Side Navigation */}
           <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-sm p-4 sticky top-8">
+            <div className="rounded-2xl p-4 sticky top-8 border border-[rgba(255,255,255,0.1)] backdrop-blur-sm bg-opacity-10">
               <nav className="space-y-1">
                 {sections.map((section) => {
                   const isActive = activeSection === section.id;
@@ -478,7 +478,7 @@ export default function EditKYC() {
                 })}
               </nav>
               
-              <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.1)]">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Completion Status</span>
                   <span className="font-medium text-blue-600">
@@ -522,7 +522,7 @@ export default function EditKYC() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                      className="rounded-2xl p-6 md:p-8 border border-[rgba(255,255,255,0.1)] backdrop-blur-sm bg-opacity-10"
                     >
                       <div className="space-y-6">
                         {/* Profile Image */}
@@ -958,7 +958,7 @@ export default function EditKYC() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                      className="rounded-2xl p-6 md:p-8 border border-[rgba(255,255,255,0.1)] backdrop-blur-sm bg-opacity-10"
                     >
                       {/* Permanent Address */}
                       <div className="mb-8">
@@ -1178,7 +1178,7 @@ export default function EditKYC() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                      className="rounded-2xl p-6 md:p-8 border border-[rgba(255,255,255,0.1)] backdrop-blur-sm bg-opacity-10"
                     >
                       <div className="space-y-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1280,7 +1280,7 @@ export default function EditKYC() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                      className="rounded-2xl p-6 md:p-8 border border-[rgba(255,255,255,0.1)] backdrop-blur-sm bg-opacity-10"
                     >
                       <div className="space-y-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1381,7 +1381,7 @@ export default function EditKYC() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="bg-white rounded-2xl shadow-sm p-6 md:p-8"
+                      className="rounded-2xl p-6 md:p-8 border border-[rgba(255,255,255,0.1)] backdrop-blur-sm bg-opacity-10"
                     >
                       <div className="space-y-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1565,4 +1565,4 @@ export default function EditKYC() {
       </div>
     </div>
   );
-} 
+}

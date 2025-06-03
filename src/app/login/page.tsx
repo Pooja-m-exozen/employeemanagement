@@ -7,6 +7,7 @@ import { FaUser, FaLock, FaEye, FaEyeSlash, FaArrowRight, FaSun, FaMoon } from '
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { useTheme } from '@/context/ThemeContext';
 
 // Pre-generate fixed positions for the animated shapes
 const shapeProps = [
@@ -19,35 +20,17 @@ const shapeProps = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [fieldErrors, setFieldErrors] = useState({
     email: '',
     password: ''
   });
-
-  // Initialize theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      // Use system preference as fallback
-      setTheme('dark');
-    }
-  }, []);
-
-  // Update localStorage when theme changes
-  useEffect(() => {
-    localStorage.setItem('theme', theme);
-    // Apply theme to document for global styling if needed
-    document.documentElement.classList.toggle('dark-mode', theme === 'dark');
-  }, [theme]);
 
   // Check if already authenticated
   useEffect(() => {
@@ -55,10 +38,6 @@ export default function LoginPage() {
       router.push('/dashboard');
     }
   }, [router]);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
 
   const validateFields = () => {
     const errors = {
