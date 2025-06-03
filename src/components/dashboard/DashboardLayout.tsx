@@ -388,13 +388,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps): JSX.Element => {
           isSidebarExpanded ? 'ml-72' : 'ml-20'
         }`}>
           {/* Header */}
-          <header className={`${theme === 'dark' ? 'bg-gray-800/80 border-gray-700' : 'bg-white/80 border-gray-200'} backdrop-blur-lg shadow-lg border-b z-20 sticky top-0 h-[64px] flex items-center`}>
+          <header className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} 
+            border-b shadow-lg z-20 sticky top-0 h-[64px] flex items-center transition-colors duration-200`}>
             <div className="flex items-center justify-between px-4 w-full h-full">
               {/* Left: Menu Icon & Page Title */}
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={toggleSidebar}
-                  className={`p-2 ${theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-blue-700'} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200`}
+                  className={`p-2 ${theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-blue-700'} 
+                    transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200`}
                   title={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
                 >
                   <FaBars className="w-5 h-5" />
