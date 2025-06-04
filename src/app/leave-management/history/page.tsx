@@ -442,6 +442,12 @@ function LeaveHistoryContent() {
                     Duration
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Days
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Half Day
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -462,13 +468,27 @@ function LeaveHistoryContent() {
                       <div className="text-sm text-gray-900">
                         <div className="flex items-center gap-1">
                           <FaCalendarAlt className="w-3 h-3 text-gray-400" />
-                          {new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}
-                          {item.isHalfDay && (
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({item.halfDayType} Half)
-                            </span>
+                          {new Date(item.startDate).toLocaleDateString()}
+                          {item.startDate !== item.endDate && (
+                            <> - {new Date(item.endDate).toLocaleDateString()}</>
                           )}
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {item.numberOfDays}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {item.isHalfDay ? (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {item.halfDayType}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -528,4 +548,4 @@ export default function LeaveHistoryPage() {
       <LeaveHistoryContent />
     </DashboardLayout>
   );
-} 
+}

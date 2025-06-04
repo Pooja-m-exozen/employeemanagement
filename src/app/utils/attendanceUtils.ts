@@ -44,37 +44,46 @@ export function formatUtcTime(utcString: string | null): string | null {
   }
 }
 
-export function calculateHoursUtc(punchInUtc: string | null, punchOutUtc: string | null): string {
-  if (!punchInUtc || !punchOutUtc) return '0';
+export const calculateHoursUtc = (punchInUtc: string | null, punchOutUtc: string | null): string => {
+  if (!punchInUtc || !punchOutUtc) return '0.00';
   try {
-    const inDate = new Date(punchInUtc);
-    const outDate = new Date(punchOutUtc);
-    if (outDate < inDate) outDate.setUTCDate(outDate.getUTCDate() + 1);
-    const diffMs = outDate.getTime() - inDate.getTime();
+    const punchIn = new Date(punchInUtc);
+    const punchOut = new Date(punchOutUtc);
+    const diffMs = Math.abs(punchOut.getTime() - punchIn.getTime());
     const diffHrs = diffMs / (1000 * 60 * 60);
-    if (isNaN(diffHrs) || diffHrs < 0) return '0';
     return diffHrs.toFixed(2);
-  } catch {
-    return '0';
+  } catch (error) {
+    console.error('Error calculating hours:', error);
+    return '0.00';
   }
-}
+};
+
+export const getAttendanceStatus = (hoursWorked: number): string => {
+  if (hoursWorked >= 7) {
+    return 'Present';
+  } else if (hoursWorked >= 4.5 && hoursWorked < 7) {
+    return 'Half Day';
+  } else {
+    return 'Absent';
+  }
+};
 
 // Transform API attendance record to unified AttendanceRecord format
-export function transformAttendanceRecord(record: any): any {
-  const dateStr = (record.date as string).split('T')[0];
-  let status = record.status as string;
-  if (isHoliday(dateStr)) status = 'Holiday';
+export function transformAttendanceRecord(record: any) {
+  const hoursWorked = record.punchInTime && record.punchOutTime ?
+    parseFloat(calculateHoursUtc(record.punchInTime, record.punchOutTime)) : 0;
+
   return {
     ...record,
-    date: dateStr,
+    date: (record.date as string).split('T')[0],
     displayDate: format(new Date(record.date as string), 'EEE, MMM d, yyyy'),
-    status,
+    status: getAttendanceStatus(hoursWorked),
     punchInTime: record.punchInTime ? formatUtcTime(record.punchInTime as string) : null,
     punchOutTime: record.punchOutTime ? formatUtcTime(record.punchOutTime as string) : null,
     punchInUtc: record.punchInTime as string || null,
     punchOutUtc: record.punchOutTime as string || null,
     isLate: record.isLate as boolean || false,
     remarks: record.remarks as string,
-    totalHoursWorked: calculateHoursUtc(record.punchInTime as string, record.punchOutTime as string)
+    totalHoursWorked: hoursWorked.toFixed(2)
   };
-} 
+}
